@@ -36,7 +36,7 @@ const Header = ({ searchQuery, setSearchQuery }) => {
             <div className="w-full max-w-7xl mx-auto flex justify-between items-center">
                 <div className="flex items-center gap-3">
                     <img
-                        src={darkMode ? "/logo-pepite-dark.png" : "/logo-pepite.png"}
+                        src={darkMode ? `${import.meta.env.BASE_URL}logo-pepite-dark.png` : `${import.meta.env.BASE_URL}logo-pepite.png`}
                         alt="Pépite Logo"
                         className="h-10 w-auto object-contain"
                     />
