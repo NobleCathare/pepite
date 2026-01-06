@@ -30,13 +30,13 @@ const JobCard = ({ job, onAction }) => {
                         <Calendar size={12} /> {job.Date_Publication}
                     </span>
                 </div>
-                <div className="flex gap-2">
-                    <div className={`px-2 py-1 rounded-full text-xs font-bold ${scoreStyle}`} title="Score Mots-clés">
-                        Score {job.score_ATS} pts
+                <div className="flex gap-4 items-center">
+                    <div className={`text-lg ${scoreStyle}`} title="Score Mots-clés">
+                        {job.score_ATS}
                     </div>
                     {job.score_AI !== undefined && job.score_AI > 0 && (
-                        <div className="px-2 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-800 border border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800" title="Score IA">
-                            ATS {job.score_AI}%
+                        <div className="text-lg font-extrabold text-purple-600 dark:text-purple-400" title="Score IA">
+                            {job.score_AI}
                         </div>
                     )}
                 </div>

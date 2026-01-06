@@ -93,12 +93,18 @@ function App() {
         updateJobStatus(id, STATUS.NON_VALIDEE);
         break;
       case 'MARK_SENT':
-        executeAction(action, id, payload);
-        updateJobStatus(id, STATUS.ENVOYEE, { Date_Envoie: new Date().toISOString() });
+        // executeAction(action, id, payload); // REMOVED per user request
+        updateJobStatus(id, STATUS.ENVOYEE, {
+          Date_Envoie: new Date().toISOString(),
+          Date_Traitement: new Date().toISOString() // Column S
+        });
         break;
       case 'SEND_EMAIL':
         executeAction(action, id, payload);
-        updateJobStatus(id, STATUS.ENVOYEE, { Date_Envoie: new Date().toISOString() });
+        updateJobStatus(id, STATUS.ENVOYEE, {
+          Date_Envoie: new Date().toISOString(),
+          Date_Traitement: new Date().toISOString() // Column S
+        });
         break;
       default:
         console.warn("Unknown action", action);

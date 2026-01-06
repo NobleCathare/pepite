@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, CircleMarker, useMap } from 'react-leaflet';
 import { divIcon } from 'leaflet';
-import { Briefcase, Building, ExternalLink, MapPin, Navigation as NavIcon, RefreshCw, AlertCircle } from 'lucide-react';
+import { Briefcase, Building, ExternalLink, MapPin, Navigation as NavIcon, RefreshCw, AlertCircle, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { createPortal } from 'react-dom';
 
 // --- VISUAL CONSTANTS ---
@@ -100,7 +100,7 @@ const MapView = ({ jobs }) => {
         if (last) setLastRun(new Date(parseInt(last)));
 
         const quickLoad = () => {
-            const validJobs = jobs.filter(j => j.Lieu && j.Statut !== 'ARCHIVEE' && j.Statut !== 'SUPPRIMEE');
+            const validJobs = jobs.filter(j => (j.Statut === 'Nouvelle' || j.Statut === 'Envoyée') && j.Lieu);
             const instantResults = validJobs.map(job => {
                 const clean = normalizeCity(job.Lieu);
                 const cached = CITY_CACHE[clean];
@@ -126,7 +126,7 @@ const MapView = ({ jobs }) => {
         }
 
         setLoading(true);
-        const validJobs = jobs.filter(j => j.Lieu && j.Statut !== 'ARCHIVEE' && j.Statut !== 'SUPPRIMEE');
+        const validJobs = jobs.filter(j => (j.Statut === 'Nouvelle' || j.Statut === 'Envoyée') && j.Lieu);
         const total = validJobs.length;
         let completed = 0;
         const results = [];
@@ -223,8 +223,8 @@ const MapView = ({ jobs }) => {
                             center={job.coords}
                             radius={20 + (job.score_ATS || 0) / 5}
                             pathOptions={{
-                                color: job.score_ATS > 0 ? '#10B981' : '#F5A623',
-                                fillColor: job.score_ATS > 0 ? '#10B981' : '#F5A623',
+                                color: job.Statut === 'Envoyée' ? '#3B82F6' : (job.score_ATS > 0 ? '#10B981' : '#F5A623'),
+                                fillColor: job.Statut === 'Envoyée' ? '#3B82F6' : (job.score_ATS > 0 ? '#10B981' : '#F5A623'),
                                 fillOpacity: 0.1,
                                 stroke: false
                             }}
@@ -233,7 +233,7 @@ const MapView = ({ jobs }) => {
                             position={job.coords}
                             icon={divIcon({
                                 className: 'bg-transparent',
-                                html: `<div class="w-3 h-3 rounded-full border-2 border-white shadow-sm ${job.score_ATS > 0 ? 'bg-green-500' : 'bg-yellow-500'}"></div>`,
+                                html: `<div class="w-3 h-3 rounded-full border-2 border-white shadow-sm ${job.Statut === 'Envoyée' ? 'bg-blue-500' : (job.score_ATS > 0 ? 'bg-green-500' : 'bg-yellow-500')}"></div>`,
                                 iconSize: [12, 12],
                                 iconAnchor: [6, 6]
                             })}
@@ -253,6 +253,22 @@ const MapView = ({ jobs }) => {
                                         <a href={job.URL_offre} target="_blank" className="flex-1 bg-pepite-dark text-white text-xs py-1.5 rounded text-center hover:bg-black transition-colors">
                                             Voir l'offre
                                         </a>
+                                    </div>
+                                    <div className="flex gap-2 mt-2 pt-2 border-t border-gray-100 justify-center">
+                                        <button
+                                            onClick={() => onAction('REFUSE', job.ID_Annonce)}
+                                            className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
+                                            title="Refuser"
+                                        >
+                                            <ThumbsDown size={14} />
+                                        </button>
+                                        <button
+                                            onClick={() => onAction('KEEP', job.ID_Annonce)}
+                                            className="p-1.5 text-pepite-gold hover:bg-yellow-50 rounded-full transition-colors"
+                                            title="Conserver"
+                                        >
+                                            <ThumbsUp size={14} />
+                                        </button>
                                     </div>
                                 </div>
                             </Popup>

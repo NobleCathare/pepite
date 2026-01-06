@@ -19,7 +19,7 @@ export const SOURCES = {
 };
 
 export const getScoreColor = (score) => {
-    if (score >= 70) return "bg-green-100 text-green-800";
-    if (score >= 50) return "bg-orange-100 text-orange-800";
-    return "bg-red-100 text-red-800";
+    if (score >= 70) return "text-green-600 font-extrabold";
+    if (score >= 50) return "text-orange-500 font-extrabold";
+    return "text-red-500 font-extrabold";
 };

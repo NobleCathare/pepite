@@ -58,7 +58,7 @@ export function useGoogleSheets() {
             const SPREADSHEET_ID = import.meta.env.VITE_GOOGLE_SPREADSHEET_ID;
             // Batch Get URL
             const ranges = [
-                'Annonces!A2:AZ1000',
+                'Annonces!A2:AZ',
                 'Config_Systeme!A2:E100',
                 'Config_Filtres!A2:F500',
                 'Config_Recherche!A2:E100', // Assuming structure
@@ -83,40 +83,68 @@ export function useGoogleSheets() {
             const valueRanges = data.valueRanges;
 
             // 1. ANNONCES
-            const announcementRows = valueRanges[0].values || [];
-            const mappedJobs = announcementRows.map((row, index) => ({
-                ID_Annonce: row[0],
-                Titre_poste: row[1],
-                Entreprise: row[2],
-                URL_Entreprise: row[3],
-                Lieu: row[4],
-                Salaire: row[5],
-                URL_offre: row[6],
-                Description: row[7],
-                Type_contrat: row[8],
-                Source: row[9],
-                Date_Publication: row[10],
-                Prenom_Recruteur: row[13],
-                Nom_Recruteur: row[14],
-                Poste_Recruteur: row[15],
-                Email_Recruteur: row[16],
-                Linkedin_Recruteur: row[12],
-                Statut: normalizeStatus(row[27]),
-                score_ATS: parseInt(row[36] || '0'), // Score Mots-clés (Col 37)
-                score_AI: parseInt(row[31] || '0'),  // Score IA/ATS (Col 32)
-                remarque_ATS: row[32],
-                JSON_Analysis: row[33],
-                _score_details: row[36],
-                CV_Doc_URL: row[22], // Col W
-                LM_Doc_URL: row[23], // Col X
-                CV_Texte_Adapte: row[38] || '',
-                LM_Texte: row[39] || '',
-                Message_Contact: row[40] || '',
-                Combined_PDF_URL: row[41] || '', // Lien unique PDF (Col AP)
-                rowIndex: index + 2
-            }));
+            const allRows = valueRanges[0].values || [];
+            const totalRows = allRows.length;
+            const LIMIT = 1000;
+            const startIndex = Math.max(0, totalRows - LIMIT);
 
-            setJobs(mappedJobs.filter(j => j.ID_Annonce));
+            const ACTIONABLE_STATUSES = [
+                STATUS.A_VERIFIER,
+                STATUS.TRAITEMENT,
+                STATUS.PRETE,
+                STATUS.ENVOYEE,
+                STATUS.ENTRETIEN,
+                STATUS.OFFRE,
+                'A traiter' // Raw value just in case
+            ];
+
+            const mappedJobs = allRows.map((row, index) => {
+                const rawStatus = row[27];
+                const normalizedStatut = normalizeStatus(rawStatus);
+
+                // Optim: Skip mapping details for obviously archived/old rows if we were constrained, 
+                // but mapping 2-3k rows is negligible. We map everything to ensure rowIndex is correct.
+                return {
+                    ID_Annonce: row[0],
+                    Titre_poste: row[1],
+                    Entreprise: row[2],
+                    URL_Entreprise: row[3],
+                    Lieu: row[4],
+                    Salaire: row[5],
+                    URL_offre: row[6],
+                    Description: row[7],
+                    Type_contrat: row[8],
+                    Source: row[9],
+                    Date_Publication: row[10],
+                    Prenom_Recruteur: row[13],
+                    Nom_Recruteur: row[14],
+                    Poste_Recruteur: row[15],
+                    Email_Recruteur: row[16],
+                    Date_Traitement: row[18], // Column S
+                    Linkedin_Recruteur: row[12],
+                    Statut: normalizedStatut,
+                    score_ATS: parseInt(row[36] || '0'), // Score Mots-clés (Col 37)
+                    score_AI: parseInt(row[31] || '0'),  // Score IA/ATS (Col 32)
+                    remarque_ATS: row[32],
+                    JSON_Analysis: row[33],
+                    _score_details: row[36],
+                    CV_Doc_URL: row[22], // Col W
+                    LM_Doc_URL: row[23], // Col X
+                    CV_Texte_Adapte: row[38] || '',
+                    LM_Texte: row[39] || '',
+                    Message_Contact: row[40] || '',
+                    Combined_PDF_URL: row[41] || '', // Lien unique PDF (Col AP)
+                    rowIndex: index + 2,
+                    isRecent: index >= startIndex
+                };
+            });
+
+            // Filter: Keep if Recent OR Actionable
+            const finalJobs = mappedJobs.filter(j =>
+                j.ID_Annonce && (j.isRecent || ACTIONABLE_STATUSES.includes(j.Statut))
+            );
+
+            setJobs(finalJobs);
 
             // 2. SETTINGS parsing
             setSettings({
@@ -163,6 +191,22 @@ export function useGoogleSheets() {
                     values: [[newStatus]]
                 })
             });
+
+            // Update Date_Traitement (Column S - Index 18) if provided in additionalData
+            if (additionalData.Date_Traitement) {
+                const urlDate = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/Annonces!S${job.rowIndex}?valueInputOption=RAW`;
+                await fetch(urlDate, {
+                    method: 'PUT',
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        values: [[additionalData.Date_Traitement]]
+                    })
+                });
+            }
+
 
         } catch (e) {
             console.error("Update Error", e);
