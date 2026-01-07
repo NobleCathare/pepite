@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Settings, Filter, Search, Plus, Trash2, Save, X, Edit2, AlertCircle, MapPin } from 'lucide-react';
+import { Settings, Filter, Search, Plus, Trash2, Save, X, Edit2, AlertCircle, MapPin, Check, Info } from 'lucide-react';
 import { useWebhook } from '../../hooks/useWebhook';
 
 /* --- SUB-COMPONENT: SYSTEM TAB --- */
@@ -514,7 +514,7 @@ const VisualFiltersTab = ({ data, onUpdate, onAdd, onDelete, onRecalculate, load
 };
 
 /* --- SUB-COMPONENT: RECHERCHE TAB (Interactive) --- */
-const SearchTab = ({ searchData, romeData, inseeData, onUpdate, onAdd, onDelete, loading }) => {
+const SearchTab = ({ searchData, romeData, inseeData, onUpdate, onAdd, onDelete, onBulkUpdate, loading }) => {
     // State for List
     const rules = searchData.map((r, i) => ({
         index: i,
@@ -523,7 +523,8 @@ const SearchTab = ({ searchData, romeData, inseeData, onUpdate, onAdd, onDelete,
         romeCodes: r[2],
         location: r[3],
         locationType: r[4],
-        distance: r[5]
+        distance: r[5],
+        contracts: r[6]
     }));
 
     // State for Modal
@@ -535,8 +536,12 @@ const SearchTab = ({ searchData, romeData, inseeData, onUpdate, onAdd, onDelete,
         romeCodes: [],
         location: '',
         locationType: 'france', // 'france', 'region', 'departement', 'commune'
-        distance: ''
+        distance: '',
+        contracts: []
     });
+    const [selectedIndices, setSelectedIndices] = useState([]);
+    const [isBulkEditing, setIsBulkEditing] = useState(false);
+
 
     // Sub-states for Search Logic
     const [romeSearch, setRomeSearch] = useState('');
@@ -546,9 +551,15 @@ const SearchTab = ({ searchData, romeData, inseeData, onUpdate, onAdd, onDelete,
 
     // Derived Data
     // Guard against romeData being null/undefined or containing null rows
+    // User Update: C=Code(2), D=Qualif(3), E=Title(4)
     const romeOptions = (romeData || []).map(r => {
-        if (!r) return null;
-        return { code: r[0], label: r[1], full: `${r[0]} - ${r[1]}` };
+        if (!r || !r[2]) return null;
+        return {
+            code: r[2],
+            label: r[4] || 'Sans titre',
+            qualif: r[3] || '',
+            full: `${r[2]} - ${r[4] || ''} (${r[3] || ''})`
+        };
     }).filter(Boolean);
 
     // REGIONS CONSTANT
@@ -568,6 +579,21 @@ const SearchTab = ({ searchData, romeData, inseeData, onUpdate, onAdd, onDelete,
         { code: '93', name: 'Provence-Alpes-Côte d\'Azur' }
     ];
 
+    const CONTRACT_OPTIONS = [
+        { code: 'CDI', label: 'CDI' },
+        { code: 'CDD', label: 'CDD' },
+        { code: 'MIS', label: 'Intérim' },
+        { code: 'SAI', label: 'Saisonnier' },
+        { code: 'LIB', label: 'Libéral' },
+        { code: 'FRA', label: 'Franchise' },
+        { code: 'DIN', label: 'Stage' }, // 'DIN' often acts as catch-all or specific 'Divers'. 'STA' not always standard.
+        { code: 'APP', label: 'Apprentissage' },
+        { code: 'PRO', label: 'Contrat Pro' }
+        // 'Alternance' usually implies APP or PRO. User can select both.
+    ];
+
+    const getContractLabel = (c) => CONTRACT_OPTIONS.find(o => o.code === c)?.label || c;
+
     // HANDLERS
     const handleSave = () => {
         if (!form.keyword && form.romeCodes.length === 0) return alert("Un mot-clé ou un code ROME est requis.");
@@ -578,7 +604,8 @@ const SearchTab = ({ searchData, romeData, inseeData, onUpdate, onAdd, onDelete,
             form.romeCodes.join(','),
             form.location,
             form.locationType,
-            form.distance
+            form.distance,
+            form.contracts.join(',')
         ];
 
         if (editingIndex !== null) {
@@ -589,13 +616,45 @@ const SearchTab = ({ searchData, romeData, inseeData, onUpdate, onAdd, onDelete,
         resetForm();
     };
 
+    const handleBulkSave = () => {
+        const newRechercheData = [...searchData];
+        selectedIndices.forEach(index => {
+            const original = newRechercheData[index];
+            const newActive = original[0];
+            const newKeyword = original[1];
+
+            // Only apply if form field is NOT empty (or handling explicit clear? Assume accumulation for now or overwrite if set)
+            // User said "appliquer les champs de recherche en commun". 
+            // If I set "Paris" in modal, all selected get "Paris".
+            // If I leave "Paris" empty, they keep their location.
+
+            const newRome = form.romeCodes.length > 0 ? form.romeCodes.join(',') : original[2];
+            const newLocation = form.location ? form.location : original[3];
+            const newLocationType = form.location ? form.locationType : original[4];
+            const newDistance = form.distance ? form.distance : original[5];
+            const newContracts = form.contracts.length > 0 ? form.contracts.join(',') : original[6];
+
+            newRechercheData[index] = [newActive, newKeyword, newRome, newLocation, newLocationType, newDistance, newContracts];
+        });
+
+        onBulkUpdate(newRechercheData);
+        setIsBulkEditing(false);
+        setSelectedIndices([]);
+        resetForm();
+    };
+
+    const toggleSelection = (index) => {
+        setSelectedIndices(prev => prev.includes(index) ? prev.filter(i => i !== index) : [...prev, index]);
+    };
+
     const resetForm = () => {
-        setForm({ active: 'TRUE', keyword: '', romeCodes: [], location: '', locationType: 'france', distance: '' });
+        setForm({ active: 'TRUE', keyword: '', romeCodes: [], location: '', locationType: 'france', distance: '', contracts: [] });
         setRomeSearch('');
         setInseeSearch('');
         setInseeSuggestions([]);
         setEditingIndex(null);
         setIsCreating(false);
+        setIsBulkEditing(false);
     };
 
     const startEdit = (rule) => {
@@ -614,7 +673,8 @@ const SearchTab = ({ searchData, romeData, inseeData, onUpdate, onAdd, onDelete,
             romeCodes: rule.romeCodes ? rule.romeCodes.split(',').filter(Boolean) : [],
             location: rule.location,
             locationType: rule.locationType || 'france',
-            distance: rule.distance || ''
+            distance: rule.distance || '',
+            contracts: rule.contracts ? rule.contracts.split(',').filter(Boolean) : []
         });
         setInseeSearch(initialInseeSearch);
         setEditingIndex(rule.index);
@@ -687,220 +747,419 @@ const SearchTab = ({ searchData, romeData, inseeData, onUpdate, onAdd, onDelete,
             </div>
 
             {/* List */}
-            <div className="grid gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {rules.map((rule) => {
                     const romeList = rule.romeCodes ? rule.romeCodes.split(',').filter(Boolean) : [];
                     const isActive = rule.active === 'TRUE';
 
-                    return (
-                        <div key={rule.index} className={`bg-white dark:bg-gray-800 rounded-lg border ${isActive ? 'border-gray-200 dark:border-gray-700' : 'border-gray-100 dark:border-gray-800 opacity-60'} p-4 flex flex-col md:flex-row gap-4 items-start md:items-center justify-between group transition-all`}>
-                            <div className="flex items-center gap-4 flex-1">
-                                <button
-                                    onClick={() => onUpdate(rule.index, [isActive ? 'FALSE' : 'TRUE', rule.keyword, rule.romeCodes, rule.location, rule.locationType, rule.distance])}
-                                    className={`p-2 rounded-full ${isActive ? 'text-green-500 bg-green-50 dark:bg-green-900/20' : 'text-gray-300 bg-gray-100 dark:bg-gray-700'}`}
-                                >
-                                    {isActive ? <div className="w-3 h-3 bg-current rounded-full" /> : <div className="w-3 h-3 border-2 border-current rounded-full" />}
-                                </button>
 
-                                <div className="space-y-1">
-                                    <div className="flex items-center gap-2">
-                                        <span className="font-bold text-gray-800 dark:text-white">{rule.keyword || <em className="text-gray-400 font-normal">Sans mot-clé</em>}</span>
-                                        {rule.locationType && rule.locationType !== 'france' && (
-                                            <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-500 px-2 py-0.5 rounded flex items-center gap-1 uppercase">
-                                                <MapPin size={10} />
-                                                {rule.locationType === 'region' ? (REGIONS.find(r => r.code === rule.location)?.name || rule.location) : rule.location}
-                                                <span className="opacity-50 text-[9px]">{rule.locationType}</span>
-                                                {rule.distance && <span className="text-pepite-gold ml-1">+{rule.distance}km</span>}
-                                            </span>
-                                        )}
-                                        {rule.locationType === 'france' && <span className="text-xs text-gray-400 border border-gray-200 px-1 rounded">FRANCE</span>}
+                    return (
+                        <div key={rule.index}
+                            className={`
+                                relative bg-white dark:bg-gray-800 rounded-xl p-5 border shadow-sm hover:shadow-md transition-all group flex flex-col justify-between min-h-[160px]
+                                ${isActive ? 'border-gray-200 dark:border-gray-700' : 'border-gray-100 dark:border-gray-800 opacity-75 grayscale-[0.5]'}
+                             `}
+                        >
+                            {/* Header: Checkbox + Keyword + Actions */}
+                            <div className="flex items-start gap-4 mb-2">
+                                <div className="pt-1">
+                                    <input
+                                        type="checkbox"
+                                        checked={selectedIndices.includes(rule.index)}
+                                        onChange={(e) => { e.stopPropagation(); toggleSelection(rule.index); }}
+                                        className="w-5 h-5 rounded border-gray-300 text-pepite-gold focus:ring-pepite-gold cursor-pointer"
+                                    />
+                                </div>
+
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex justify-between items-start">
+                                        <h4 className="font-bold text-gray-800 dark:text-gray-100 text-lg leading-tight truncate pr-2">
+                                            {rule.keyword || <span className="text-gray-400 italic font-normal">Sans mot-clé</span>}
+                                        </h4>
+                                        <div className="flex items-center gap-2">
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); onUpdate(rule.index, [isActive ? 'FALSE' : 'TRUE', rule.keyword, rule.romeCodes, rule.location, rule.locationType, rule.distance, rule.contracts]); }}
+                                                className={`w-8 h-5 rounded-full p-1 transition-colors relative ${isActive ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'}`}
+                                                title={isActive ? "Désactiver" : "Activer"}
+                                            >
+                                                <div className={`w-3 h-3 bg-white rounded-full shadow-sm transition-transform ${isActive ? 'translate-x-3' : 'translate-x-0'}`} />
+                                            </button>
+                                        </div>
                                     </div>
-                                    <div className="flex flex-wrap gap-1">
-                                        {romeList.map(code => {
-                                            const rome = romeOptions.find(r => r.code === code);
-                                            return (
-                                                <span key={code} className="text-[10px] uppercase font-mono bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 px-1.5 py-0.5 rounded border border-blue-100 dark:border-blue-800" title={rome?.label}>
-                                                    {code}
-                                                </span>
-                                            );
-                                        })}
-                                        {romeList.length === 0 && <span className="text-[10px] text-gray-400 italic">Aucun code ROME</span>}
+
+
+                                </div>
+
+
+                            </div>
+
+                            {/* Expanded Content */}
+                            {/* Body: Badges & Info */}
+                            <div className="space-y-3 flex-1">
+                                <div className="flex flex-wrap gap-2">
+                                    {/* Location Badge */}
+                                    <div className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wide bg-gray-50 dark:bg-gray-700/50 px-2 py-1 rounded">
+                                        <MapPin size={12} className="text-pepite-gold" />
+                                        <span className="truncate max-w-[120px]">
+                                            {(rule.locationType === 'region' ? (REGIONS.find(r => r.code === rule.location)?.name || rule.location) : (rule.locationType === 'france' ? 'France Entière' : rule.location)) || 'France'}
+                                        </span>
+                                        {rule.distance && <span className="text-pepite-gold ml-0.5">+{rule.distance}km</span>}
                                     </div>
+
+                                    {/* Contracts Badge */}
+                                    {rule.contracts && rule.contracts.split(',').filter(Boolean).map(c => (
+                                        <span key={c} className="text-[10px] font-bold px-2 py-1 rounded bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-300 border border-purple-100 dark:border-purple-800">
+                                            {getContractLabel(c)}
+                                        </span>
+                                    ))}
+                                </div>
+
+                                {/* ROME Summary */}
+                                <div className="text-xs text-gray-500 dark:text-gray-400 italic pl-1 border-l-2 border-gray-100 dark:border-gray-700">
+                                    {romeList.length > 0 ? (
+                                        <span>
+                                            <span className="font-bold text-gray-700 dark:text-gray-300">{romeList.length}</span> code(s) ROME associé(s)
+                                        </span>
+                                    ) : (
+                                        'Aucun code ROME'
+                                    )}
                                 </div>
                             </div>
 
-                            <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button onClick={() => startEdit(rule)} className="p-2 text-gray-400 hover:text-pepite-gold hover:bg-yellow-50 rounded-lg transition-colors"><Edit2 size={16} /></button>
-                                <button onClick={() => onDelete(rule.index)} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"><Trash2 size={16} /></button>
+                            {/* Footer: Direct Actions (Icons) */}
+                            <div className="flex justify-end gap-3 mt-4 pt-3 border-t border-gray-50 dark:border-gray-800 transition-opacity">
+                                <button
+                                    onClick={() => startEdit(rule)}
+                                    className="p-1.5 text-gray-400 hover:text-pepite-gold hover:bg-yellow-50 dark:hover:bg-yellow-900/20 rounded-lg transition-colors"
+                                    title="Modifier"
+                                >
+                                    <Edit2 size={18} />
+                                </button>
+                                <button
+                                    onClick={() => onDelete(rule.index)}
+                                    className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                                    title="Supprimer"
+                                >
+                                    <Trash2 size={18} />
+                                </button>
                             </div>
+
+
                         </div>
                     );
                 })}
             </div>
 
+            {/* Bulk Action Bar */}
+            {selectedIndices.length > 0 && (
+                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-6 py-3 rounded-xl shadow-2xl flex items-center gap-4 z-40 animate-slide-up">
+                    <span className="font-bold">{selectedIndices.length} sélectionné(s)</span>
+                    <div className="h-6 w-px bg-gray-700" />
+                    <button
+                        onClick={() => {
+                            resetForm();
+                            setIsBulkEditing(true);
+                        }}
+                        className="flex items-center gap-2 hover:text-pepite-gold transition-colors font-medium"
+                    >
+                        <Edit2 size={16} /> Modifier
+                    </button>
+                    <button
+                        onClick={() => setSelectedIndices([])}
+                        className="ml-2 text-gray-500 hover:text-white"
+                    >
+                        <X size={16} />
+                    </button>
+                </div>
+            )}
+
             {/* Modal */}
-            {isCreating && (
-                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={resetForm}>
-                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto space-y-6" onClick={e => e.stopPropagation()}>
-                        <div className="flex justify-between items-center pb-4 border-b dark:border-gray-700">
-                            <h3 className="text-xl font-bold text-gray-800 dark:text-white">{editingIndex !== null ? 'Modifier' : 'Ajouter'} une configuration</h3>
-                            <button onClick={resetForm} className="text-gray-400 hover:text-gray-600"><X size={24} /></button>
+            {(isCreating || editingIndex !== null || isBulkEditing) && (
+                <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm" onClick={resetForm}>
+                    <div
+                        className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-5xl flex flex-col max-h-[90vh]"
+                        onClick={e => e.stopPropagation()}
+                    >
+                        {/* Modal Header */}
+                        <div className="flex justify-between items-center p-6 border-b dark:border-gray-700 shrink-0">
+                            <div>
+                                <h3 className="text-2xl font-bold text-gray-800 dark:text-white">
+                                    {isBulkEditing ? `Modifier ${selectedIndices.length} éléments` : (editingIndex !== null ? 'Modifier la configuration' : 'Nouvelle configuration')}
+                                </h3>
+                                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                                    {isBulkEditing ? 'Appliquez des modifications en masse aux éléments sélectionnés.' : 'Définissez les critères de recherche pour ce profil.'}
+                                </p>
+                            </div>
+                            <button onClick={resetForm} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors text-gray-500">
+                                <X size={24} />
+                            </button>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {/* Left Col: Params */}
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Actif</label>
-                                    <div className="flex gap-4">
-                                        <label className="flex items-center gap-2 cursor-pointer">
-                                            <input type="radio" checked={form.active === 'TRUE'} onChange={() => setForm({ ...form, active: 'TRUE' })} className="text-pepite-gold focus:ring-pepite-gold" />
-                                            <span className="text-sm">Oui</span>
-                                        </label>
-                                        <label className="flex items-center gap-2 cursor-pointer">
-                                            <input type="radio" checked={form.active === 'FALSE'} onChange={() => setForm({ ...form, active: 'FALSE' })} className="text-gray-500 focus:ring-gray-500" />
-                                            <span className="text-sm">Non</span>
-                                        </label>
+                        {/* Modal Body - Scrollable */}
+                        <div className="flex-1 overflow-y-auto p-6">
+                            {isBulkEditing && (
+                                <div className="mb-6 bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200 p-4 rounded-xl flex items-start gap-3 border border-blue-100 dark:border-blue-900/50">
+                                    <Info size={20} className="shrink-0 mt-0.5" />
+                                    <div className="text-sm">
+                                        <p className="font-bold mb-1">Mode Édition Groupée</p>
+                                        <p>Les champs que vous modifiez ici seront appliqués à <strong>tous</strong> les éléments sélectionnés. Les champs laissés intacts conserveront leur valeur actuelle pour chaque élément.</p>
                                     </div>
                                 </div>
+                            )}
 
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Mot-clé principal</label>
-                                    <input
-                                        className="w-full border dark:border-gray-600 rounded-lg p-2.5 text-sm bg-gray-50 dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-pepite-gold outline-none"
-                                        value={form.keyword}
-                                        onChange={e => setForm({ ...form, keyword: e.target.value })}
-                                        placeholder="Ex: Développeur React"
-                                    />
-                                </div>
-
-                                <div className="space-y-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-100 dark:border-gray-700">
-                                    <div>
-                                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Type de Lieu</label>
-                                        <select
-                                            className="w-full border dark:border-gray-600 rounded-lg p-2.5 text-sm bg-white dark:bg-gray-700 dark:text-white"
-                                            value={form.locationType}
-                                            onChange={e => setForm({ ...form, locationType: e.target.value, location: e.target.value === 'france' ? '' : form.location })}
-                                        >
-                                            <option value="france">France Entière</option>
-                                            <option value="region">Région</option>
-                                            <option value="departement">Département</option>
-                                            <option value="commune">Commune (Recherche INSEE)</option>
-                                        </select>
-                                    </div>
-
-                                    {form.locationType === 'region' && (
-                                        <div>
-                                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Choisir la Région</label>
-                                            <select
-                                                className="w-full border dark:border-gray-600 rounded-lg p-2.5 text-sm bg-white dark:bg-gray-700 dark:text-white"
-                                                value={form.location}
-                                                onChange={e => setForm({ ...form, location: e.target.value })}
-                                            >
-                                                <option value="" disabled>Sélectionner...</option>
-                                                {REGIONS.map(r => <option key={r.code} value={r.code}>{r.name}</option>)}
-                                            </select>
-                                        </div>
-                                    )}
-
-                                    {form.locationType === 'departement' && (
-                                        <div>
-                                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Numéro Département</label>
-                                            <input
-                                                className="w-full border dark:border-gray-600 rounded-lg p-2.5 text-sm bg-white dark:bg-gray-700 dark:text-white"
-                                                value={form.location}
-                                                onChange={e => setForm({ ...form, location: e.target.value })}
-                                                placeholder="Ex: 33, 75, 2A"
-                                            />
-                                        </div>
-                                    )}
-
-                                    {form.locationType === 'commune' && (
-                                        <div className="space-y-4 pt-2 border-t dark:border-gray-700 mt-2">
-                                            <div className="relative">
-                                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Rechercher une commune</label>
-                                                <input
-                                                    className="w-full border dark:border-gray-600 rounded-lg p-2.5 text-sm bg-white dark:bg-gray-700 dark:text-white"
-                                                    value={inseeSearch}
-                                                    onChange={e => handleInseeSearch(e.target.value)}
-                                                    placeholder="Code postal ou nom..."
-                                                />
-                                                {showInseeSuggestions && (
-                                                    <div className="absolute z-50 w-full bg-white dark:bg-gray-800 border dark:border-gray-700 shadow-xl rounded-lg mt-1 max-h-48 overflow-y-auto">
-                                                        {inseeSuggestions.map((s, i) => (
-                                                            <div
-                                                                key={i}
-                                                                className="px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer text-sm border-b dark:border-gray-700 last:border-0"
-                                                                onClick={() => selectInsee(s)}
-                                                            >
-                                                                <span className="font-bold text-gray-800 dark:text-gray-200">{s[1]}</span>
-                                                                <span className="text-gray-400 text-xs ml-2">({s[0]})</span>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                )}
-                                                {form.location && <div className="text-xs text-green-600 mt-1 font-mono">Code INSEE sélectionné : {form.location}</div>}
-                                            </div>
+                            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                                {/* Left Column: Form Fields (Span 5) */}
+                                <div className="lg:col-span-5 space-y-6">
+                                    {/* Actif / Keyword - Hidden in Bulk */}
+                                    {!isBulkEditing && (
+                                        <div className="p-5 bg-gray-50 dark:bg-gray-700/30 rounded-xl border border-gray-100 dark:border-gray-700/50 space-y-5">
                                             <div>
-                                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Distance (km)</label>
+                                                <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Statut</label>
+                                                <div className="flex gap-2">
+                                                    <button
+                                                        onClick={() => setForm({ ...form, active: 'TRUE' })}
+                                                        className={`flex-1 py-2 text-sm font-medium rounded-lg border transition-all ${form.active === 'TRUE'
+                                                            ? 'bg-green-50 text-green-700 border-green-200 ring-2 ring-green-500/20'
+                                                            : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'
+                                                            }`}
+                                                    >
+                                                        Actif
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setForm({ ...form, active: 'FALSE' })}
+                                                        className={`flex-1 py-2 text-sm font-medium rounded-lg border transition-all ${form.active === 'FALSE'
+                                                            ? 'bg-gray-100 text-gray-700 border-gray-300 ring-2 ring-gray-500/20'
+                                                            : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'
+                                                            }`}
+                                                    >
+                                                        Inactif
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            <div>
+                                                <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Mot-clé principal</label>
                                                 <input
-                                                    type="number"
-                                                    className="w-full border dark:border-gray-600 rounded-lg p-2.5 text-sm bg-white dark:bg-gray-700 dark:text-white"
-                                                    value={form.distance}
-                                                    onChange={e => setForm({ ...form, distance: e.target.value })}
-                                                    placeholder="Ex: 10, 20..."
+                                                    className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-3 text-sm bg-white dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-pepite-gold focus:border-transparent outline-none transition-shadow py-2.5"
+                                                    value={form.keyword}
+                                                    onChange={e => setForm({ ...form, keyword: e.target.value })}
+                                                    placeholder="Ex: Développeur Fullstack"
                                                 />
                                             </div>
                                         </div>
                                     )}
-                                </div>
-                            </div>
 
-                            {/* Right Col: ROME Selector */}
-                            <div className="space-y-4 flex flex-col h-full">
-                                <label className="block text-xs font-bold text-gray-500 uppercase">Codes ROME Associés</label>
-                                <div className="border dark:border-gray-600 rounded-lg flex-1 flex flex-col overflow-hidden max-h-[300px]">
-                                    <div className="p-2 border-b dark:border-gray-600 bg-gray-50 dark:bg-gray-700">
+                                    {/* Location & Contract Section */}
+                                    <div className="space-y-6">
+                                        <div className="space-y-4">
+                                            <label className="block text-xs font-bold text-gray-500 uppercase border-b pb-1 dark:border-gray-700">Localisation</label>
+
+                                            <div>
+                                                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">Type de zone</label>
+                                                <select
+                                                    className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2.5 text-sm bg-white dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-pepite-gold focus:border-transparent outline-none"
+                                                    value={form.locationType}
+                                                    onChange={e => setForm({ ...form, locationType: e.target.value, location: e.target.value === 'france' ? '' : form.location })}
+                                                >
+                                                    <option value="france">🇫🇷 France Entière</option>
+                                                    <option value="region">🌍 Région</option>
+                                                    <option value="departement">📍 Département</option>
+                                                    <option value="commune">🏘️ Commune (Recherche INSEE)</option>
+                                                </select>
+                                            </div>
+
+                                            {form.locationType === 'region' && (
+                                                <div>
+                                                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">Région</label>
+                                                    <select
+                                                        className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2.5 text-sm bg-white dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-pepite-gold outline-none"
+                                                        value={form.location}
+                                                        onChange={e => setForm({ ...form, location: e.target.value })}
+                                                    >
+                                                        <option value="" disabled>Sélectionner une région...</option>
+                                                        {REGIONS.map(r => <option key={r.code} value={r.code}>{r.name}</option>)}
+                                                    </select>
+                                                </div>
+                                            )}
+
+                                            {form.locationType === 'departement' && (
+                                                <div>
+                                                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">Numéro Département</label>
+                                                    <input
+                                                        className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2.5 text-sm bg-white dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-pepite-gold outline-none"
+                                                        value={form.location}
+                                                        onChange={e => setForm({ ...form, location: e.target.value })}
+                                                        placeholder="Ex: 33, 75, 2A"
+                                                    />
+                                                </div>
+                                            )}
+
+                                            {form.locationType === 'commune' && (
+                                                <div className="space-y-3">
+                                                    <div className="relative">
+                                                        <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">Recherche Commune</label>
+                                                        <input
+                                                            className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2.5 text-sm bg-white dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-pepite-gold outline-none"
+                                                            value={inseeSearch}
+                                                            onChange={e => handleInseeSearch(e.target.value)}
+                                                            placeholder="Code postal ou nom de ville..."
+                                                        />
+                                                        {showInseeSuggestions && (
+                                                            <div className="absolute z-50 w-full bg-white dark:bg-gray-800 border dark:border-gray-700 shadow-xl rounded-lg mt-1 max-h-48 overflow-y-auto">
+                                                                {inseeSuggestions.map((s, i) => (
+                                                                    <div
+                                                                        key={i}
+                                                                        className="px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer text-sm border-b dark:border-gray-700 last:border-0"
+                                                                        onClick={() => selectInsee(s)}
+                                                                    >
+                                                                        <span className="font-bold text-gray-800 dark:text-gray-200">{s[1]}</span>
+                                                                        <span className="text-gray-400 text-xs ml-2">({s[0]})</span>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                        {form.location && <div className="text-xs text-green-600 mt-1 font-mono bg-green-50 px-2 py-1 rounded inline-block">Code INSEE : {form.location}</div>}
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">Rayon (km)</label>
+                                                        <div className="flex items-center gap-2">
+                                                            <input
+                                                                type="number"
+                                                                className="w-24 border border-gray-300 dark:border-gray-600 rounded-lg p-2.5 text-sm bg-white dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-pepite-gold outline-none"
+                                                                value={form.distance}
+                                                                onChange={e => setForm({ ...form, distance: e.target.value })}
+                                                                placeholder="0"
+                                                            />
+                                                            <span className="text-sm text-gray-500">km autour</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div className="space-y-3 pt-2">
+                                            <label className="block text-xs font-bold text-gray-500 uppercase border-b pb-1 dark:border-gray-700">Type de Contrat</label>
+                                            <div className="flex flex-wrap gap-2">
+                                                {CONTRACT_OPTIONS.map(opt => {
+                                                    const isSelected = form.contracts.includes(opt.code);
+                                                    return (
+                                                        <button
+                                                            key={opt.code}
+                                                            onClick={() => setForm(prev => ({
+                                                                ...prev,
+                                                                contracts: isSelected ? prev.contracts.filter(c => c !== opt.code) : [...prev.contracts, opt.code]
+                                                            }))}
+                                                            className={`px-3 py-1.5 text-xs rounded-full border transition-all duration-200 ${isSelected
+                                                                ? 'bg-purple-600 text-white border-purple-600 font-bold shadow-md transform scale-105'
+                                                                : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:border-purple-300 hover:text-purple-600'
+                                                                }`}
+                                                        >
+                                                            {opt.label}
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Right Column: ROME Selector (Span 7) */}
+                                <div className="lg:col-span-7 flex flex-col h-[500px] lg:h-auto border rounded-xl overflow-hidden dark:border-gray-700 shadow-sm bg-white dark:bg-gray-800">
+                                    <div className="bg-gray-50 dark:bg-gray-900/50 p-4 border-b dark:border-gray-700 flex flex-col gap-3">
+                                        <div className="flex justify-between items-center">
+                                            <label className="text-xs font-bold text-gray-500 uppercase">Codes ROME</label>
+                                            <span className="text-xs bg-pepite-gold/10 text-pepite-dark px-2 py-0.5 rounded-full font-bold">
+                                                {form.romeCodes.length} sélectionné(s)
+                                            </span>
+                                        </div>
                                         <div className="relative">
-                                            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                                            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                                             <input
-                                                className="w-full pl-9 pr-2 py-1.5 text-xs rounded border border-gray-200 dark:border-gray-600 focus:outline-none focus:border-pepite-gold"
-                                                placeholder="Rechercher un code ROME..."
+                                                className="w-full pl-10 pr-4 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-pepite-gold transition-shadow"
+                                                placeholder="Rechercher un métier ou un code..."
                                                 value={romeSearch}
                                                 onChange={e => setRomeSearch(e.target.value)}
                                             />
                                         </div>
                                     </div>
-                                    <div className="overflow-y-auto flex-1 p-1 space-y-0.5">
+
+                                    {/* Scrollable List */}
+                                    <div className="flex-1 overflow-y-auto p-2 space-y-1 bg-white dark:bg-gray-800">
+                                        {form.romeCodes.length > 0 && !romeSearch && (
+                                            <div className="mb-2 pb-2 border-b border-gray-100 dark:border-gray-700/50">
+                                                <div className="px-2 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Sélectionnés</div>
+                                                {form.romeCodes.map(code => {
+                                                    const rome = romeOptions.find(r => r.code === code);
+                                                    return (
+                                                        <button
+                                                            key={code}
+                                                            onClick={() => toggleRome(code)}
+                                                            className="w-full text-left px-3 py-2 text-xs rounded-lg flex items-center justify-between group bg-pepite-gold/5 border border-pepite-gold/20 hover:bg-red-50 hover:border-red-200 transition-colors mb-1"
+                                                        >
+                                                            <div className="flex flex-col items-start truncate pr-2">
+                                                                <span className="truncate w-full font-medium text-gray-800 dark:text-gray-200">
+                                                                    <span className="font-mono font-bold mr-2 text-pepite-dark">{code}</span>
+                                                                    {rome?.label}
+                                                                </span>
+                                                            </div>
+                                                            <X size={14} className="text-pepite-dark group-hover:text-red-500" />
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+
+                                        <div className="px-2 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Résultats de recherche</div>
                                         {filteredRome.map(rome => {
                                             const selected = form.romeCodes.includes(rome.code);
+                                            // Don't show already selected items in the main list to save space/reduce clutter? Or show them with active state?
+                                            // Let's show them for clarity but maybe distinct style handled below
+                                            if (selected && !romeSearch) return null; // Skip if already shown in top section (unless searching)
+
                                             return (
                                                 <button
                                                     key={rome.code}
                                                     onClick={() => toggleRome(rome.code)}
-                                                    className={`w-full text-left px-3 py-2 text-xs rounded flex items-center justify-between group ${selected ? 'bg-pepite-gold/10 text-pepite-dark' : 'hover:bg-gray-50 dark:hover:bg-gray-700/50 text-gray-600 dark:text-gray-300'}`}
+                                                    className={`w-full text-left px-3 py-2.5 text-xs rounded-lg flex items-center justify-between group transition-all ${selected
+                                                        ? 'bg-pepite-gold/10 text-pepite-dark font-medium border border-pepite-gold/30'
+                                                        : 'hover:bg-gray-50 dark:hover:bg-gray-700/50 text-gray-600 dark:text-gray-300 border border-transparent'
+                                                        }`}
                                                 >
-                                                    <span className="truncate pr-2"><span className="font-mono font-bold mr-2">{rome.code}</span>{rome.label}</span>
-                                                    {selected && <div className="w-2 h-2 rounded-full bg-pepite-gold shrink-0" />}
+                                                    <div className="flex flex-col items-start truncate pr-2">
+                                                        <span className="truncate w-full">
+                                                            <span className="font-mono font-bold mr-2 opacity-70">{rome.code}</span>
+                                                            {rome.label}
+                                                        </span>
+                                                        {rome.qualif && <span className="text-[10px] text-gray-400 italic truncate w-full pl-8">{rome.qualif}</span>}
+                                                    </div>
+                                                    {selected && <Check size={14} className="text-pepite-gold shrink-0" />}
                                                 </button>
                                             );
                                         })}
-                                        {filteredRome.length === 0 && <div className="p-4 text-center text-xs text-gray-400">Aucun résultat</div>}
+                                        {filteredRome.length === 0 && <div className="p-8 text-center text-sm text-gray-400 flex flex-col items-center"><Search size={24} className="mb-2 opacity-20" />Aucun résultat trouvé</div>}
                                     </div>
-                                </div>
-                                <div className="flex flex-wrap gap-1 min-h-[24px]">
-                                    {form.romeCodes.map(code => (
-                                        <span key={code} onClick={() => toggleRome(code)} className="cursor-pointer hover:bg-red-100 hover:text-red-600 hover:border-red-200 transition-colors text-[10px] bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded border border-gray-200 dark:border-gray-600 flex items-center gap-1">
-                                            {code} <X size={10} />
-                                        </span>
-                                    ))}
                                 </div>
                             </div>
                         </div>
 
-                        <div className="pt-4 border-t dark:border-gray-700 flex gap-3">
-                            <button onClick={handleSave} className="flex-1 bg-pepite-gold text-white py-2.5 rounded-lg font-bold hover:bg-yellow-500 shadow-lg shadow-yellow-500/20">Enregistrer</button>
-                            <button onClick={resetForm} className="px-6 py-2.5 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg font-medium transition-colors">Annuler</button>
+                        {/* Modal Footer */}
+                        <div className="p-4 border-t dark:border-gray-700 bg-gray-50 dark:bg-gray-800 rounded-b-2xl flex justify-end gap-3 shrink-0">
+                            <button
+                                onClick={resetForm}
+                                className="px-6 py-2.5 text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-white border border-transparent hover:border-gray-200 rounded-lg transition-all"
+                            >
+                                Annuler
+                            </button>
+                            <button
+                                onClick={isBulkEditing ? handleBulkSave : handleSave}
+                                className="px-8 py-2.5 bg-pepite-gold text-white text-sm font-bold rounded-lg hover:bg-yellow-500 shadow-lg shadow-yellow-500/20 transform active:scale-95 transition-all flex items-center gap-2"
+                            >
+                                {isBulkEditing ? (
+                                    <><Edit2 size={16} /> Appliquer</>
+                                ) : (
+                                    <><Save size={16} /> Enregistrer</>
+                                )}
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -910,7 +1169,7 @@ const SearchTab = ({ searchData, romeData, inseeData, onUpdate, onAdd, onDelete,
 };
 
 const SettingsView = ({ settings, updateSheetValues, appendSheetRow, jobs, updateJobStatus, loading }) => {
-    const [activeTab, setActiveTab] = useState('filtres');
+    const [activeTab, setActiveTab] = useState('recherche');
 
     // --- SEARCH / ROME HANDLERS ---
     const handleUpdateSearch = (rowIndex, newValues) => {
@@ -931,6 +1190,10 @@ const SettingsView = ({ settings, updateSheetValues, appendSheetRow, jobs, updat
         newData.push(emptyRow);
         newData.push(emptyRow);
 
+        updateSheetValues('Config_Recherche!A2', newData);
+    };
+
+    const handleBulkUpdateSearch = (newData) => {
         updateSheetValues('Config_Recherche!A2', newData);
     };
 
@@ -983,11 +1246,11 @@ const SettingsView = ({ settings, updateSheetValues, appendSheetRow, jobs, updat
             <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-6 pt-6 sticky top-0 z-20">
                 <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-6">Paramètres</h1>
                 <div className="flex gap-6">
-                    <button onClick={() => setActiveTab('filtres')} className={`pb-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'filtres' ? 'border-pepite-gold text-pepite-gold' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}>
-                        <div className="flex items-center gap-2"><Filter size={18} /> Filtres & Règles</div>
-                    </button>
                     <button onClick={() => setActiveTab('recherche')} className={`pb-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'recherche' ? 'border-pepite-gold text-pepite-gold' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}>
                         <div className="flex items-center gap-2"><Search size={18} /> Recherche & ROME</div>
+                    </button>
+                    <button onClick={() => setActiveTab('filtres')} className={`pb-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'filtres' ? 'border-pepite-gold text-pepite-gold' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}>
+                        <div className="flex items-center gap-2"><Filter size={18} /> Filtres & Règles</div>
                     </button>
                     <button onClick={() => setActiveTab('wsysteme')} className={`pb-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'wsysteme' ? 'border-pepite-gold text-pepite-gold' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}>
                         <div className="flex items-center gap-2"><Settings size={18} /> Système</div>
@@ -1007,6 +1270,7 @@ const SettingsView = ({ settings, updateSheetValues, appendSheetRow, jobs, updat
                         onUpdate={handleUpdateSearch}
                         onAdd={handleAddSearch}
                         onDelete={handleDeleteSearch}
+                        onBulkUpdate={handleBulkUpdateSearch}
                         loading={loading}
                     />
                 )}

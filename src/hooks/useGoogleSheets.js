@@ -62,8 +62,8 @@ export function useGoogleSheets() {
                 'Annonces!A2:AZ',
                 'Config_Systeme!A2:E100',
                 'Config_Filtres!A2:F500',
-                'Config_Recherche!A2:F100', // Expanded to F for Distance
-                'ROME!A2:D2000',            // Assuming structure
+                'Config_Recherche!A2:G100', // Expanded to G for Contract Type
+                'ROME!A2:E2000',            // Expanded to E for Description
                 'INSEE!A2:B'                // New INSEE Data
             ];
             const rangeParams = ranges.map(r => `ranges=${r}`).join('&');
