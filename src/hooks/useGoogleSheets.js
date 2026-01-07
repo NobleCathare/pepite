@@ -33,7 +33,8 @@ export function useGoogleSheets() {
         systeme: [],
         filtres: [],
         recherche: [],
-        rome: []
+        rome: [],
+        insee: []
     });
 
     const normalizeStatus = (rawStatus) => {
@@ -61,8 +62,9 @@ export function useGoogleSheets() {
                 'Annonces!A2:AZ',
                 'Config_Systeme!A2:E100',
                 'Config_Filtres!A2:F500',
-                'Config_Recherche!A2:E100', // Assuming structure
-                'ROME!A2:D2000'            // Assuming structure
+                'Config_Recherche!A2:F100', // Expanded to F for Distance
+                'ROME!A2:D2000',            // Assuming structure
+                'INSEE!A2:B'                // New INSEE Data
             ];
             const rangeParams = ranges.map(r => `ranges=${r}`).join('&');
             const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values:batchGet?${rangeParams}`;
@@ -151,7 +153,8 @@ export function useGoogleSheets() {
                 systeme: valueRanges[1].values || [],
                 filtres: valueRanges[2].values || [],
                 recherche: valueRanges[3].values || [],
-                rome: valueRanges[4].values || []
+                rome: valueRanges[4].values || [],
+                insee: valueRanges[5].values || []
             });
 
         } catch (e) {
