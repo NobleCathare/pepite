@@ -114,7 +114,7 @@ function App() {
   const renderView = () => {
     switch (currentView) {
       case 'triage':
-        return <SwipeContainer jobs={filteredJobs.filter(j => j.Statut === STATUS.NOUVELLE)} onAction={handleAction} />;
+        return <SwipeContainer jobs={filteredJobs.filter(j => [STATUS.NOUVELLE, STATUS.FILTRE_ATS].includes(j.Statut))} onAction={handleAction} />;
       case 'editor':
         return <EditorPanel
           jobs={filteredJobs.filter(j => j.Statut === STATUS.A_VERIFIER)}
@@ -140,7 +140,7 @@ function App() {
           loading={loading}
         />;
       default:
-        return <SwipeContainer jobs={filteredJobs.filter(j => j.Statut === STATUS.NOUVELLE)} onAction={handleAction} />;
+        return <SwipeContainer jobs={filteredJobs.filter(j => [STATUS.NOUVELLE, STATUS.FILTRE_ATS].includes(j.Statut))} onAction={handleAction} />;
     }
   };
 

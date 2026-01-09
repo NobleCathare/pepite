@@ -98,7 +98,7 @@ const JobCard = ({ job, onAction }) => {
                 </a>
 
                 <div className="flex gap-2">
-                    {job.Statut === STATUS.NOUVELLE && (
+                    {[STATUS.NOUVELLE, STATUS.FILTRE_ATS].includes(job.Statut) && (
                         <>
                             <button onClick={() => onAction('REFUSE', job.ID_Annonce)} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors" title="Refuser">
                                 <ThumbsDown size={20} />

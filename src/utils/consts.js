@@ -7,6 +7,7 @@ export const STATUS = {
     ENVOYEE: "Envoyée",
     ENTRETIEN: "Entretien",
     OFFRE: "Offre",
+    FILTRE_ATS: "Filtre ATS",
     REFUSEE: "Refusée",
     NON_VALIDEE: "Non validée"
 };

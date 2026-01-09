@@ -39,7 +39,6 @@ export function useGoogleSheets() {
 
     const normalizeStatus = (rawStatus) => {
         if (!rawStatus) return STATUS.NOUVELLE;
-        if (rawStatus === 'Filtre ATS') return 'Filtrée';
         if (rawStatus === 'Type' || rawStatus === 'Linkedin') return STATUS.NOUVELLE;
         if (rawStatus === 'CV réalisé' || rawStatus === 'LM réalisé') return STATUS.PRETE;
         if (rawStatus === 'LM & CV envoyés') return STATUS.ENVOYEE;
