@@ -37,7 +37,7 @@ function App() {
 
   // Derived state for counters
   const counts = {
-    [STATUS.NOUVELLE]: jobs.filter(j => j.Statut === STATUS.NOUVELLE).length,
+    [STATUS.NOUVELLE]: jobs.filter(j => j.Statut === STATUS.NOUVELLE || j.Statut === STATUS.FILTRE_ATS).length,
     [STATUS.A_VERIFIER]: jobs.filter(j => j.Statut === STATUS.A_VERIFIER).length,
     [STATUS.PRETE]: jobs.filter(j => j.Statut === STATUS.PRETE).length,
   };

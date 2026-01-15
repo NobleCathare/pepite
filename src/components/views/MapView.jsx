@@ -3,6 +3,7 @@ import { MapContainer, TileLayer, Marker, Popup, CircleMarker, useMap } from 're
 import { divIcon } from 'leaflet';
 import { Briefcase, Building, ExternalLink, MapPin, Navigation as NavIcon, RefreshCw, AlertCircle, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { createPortal } from 'react-dom';
+import { STATUS } from '../../utils/consts';
 
 // --- VISUAL CONSTANTS ---
 const FRANCE_CENTER = [46.603354, 1.888334];
@@ -100,7 +101,7 @@ const MapView = ({ jobs }) => {
         if (last) setLastRun(new Date(parseInt(last)));
 
         const quickLoad = () => {
-            const validJobs = jobs.filter(j => (j.Statut === 'Nouvelle' || j.Statut === 'Envoyée') && j.Lieu);
+            const validJobs = jobs.filter(j => (j.Statut === STATUS.NOUVELLE || j.Statut === STATUS.FILTRE_ATS || j.Statut === STATUS.ENVOYEE) && j.Lieu);
             const instantResults = validJobs.map(job => {
                 const clean = normalizeCity(job.Lieu);
                 const cached = CITY_CACHE[clean];
@@ -126,7 +127,7 @@ const MapView = ({ jobs }) => {
         }
 
         setLoading(true);
-        const validJobs = jobs.filter(j => (j.Statut === 'Nouvelle' || j.Statut === 'Envoyée') && j.Lieu);
+        const validJobs = jobs.filter(j => (j.Statut === STATUS.NOUVELLE || j.Statut === STATUS.FILTRE_ATS || j.Statut === STATUS.ENVOYEE) && j.Lieu);
         const total = validJobs.length;
         let completed = 0;
         const results = [];
@@ -174,8 +175,8 @@ const MapView = ({ jobs }) => {
                     <div className="text-xs text-gray-500 dark:text-gray-400 space-y-1">
                         <p>Géolocalisées : <strong className="text-gray-800 dark:text-gray-200">{geocodedJobs.length}</strong> / {jobs.length}</p>
                         <div className="flex gap-2 mt-2">
-                            <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-green-500" /> Score +</span>
-                            <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-yellow-500" /> Neutre</span>
+                            <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-green-500" /> Score ATS</span>
+                            <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-blue-500" /> Envoyée</span>
                         </div>
                     </div>
                 </div>
@@ -223,8 +224,8 @@ const MapView = ({ jobs }) => {
                             center={job.coords}
                             radius={20 + (job.score_ATS || 0) / 5}
                             pathOptions={{
-                                color: job.Statut === 'Envoyée' ? '#3B82F6' : (job.score_ATS > 0 ? '#10B981' : '#F5A623'),
-                                fillColor: job.Statut === 'Envoyée' ? '#3B82F6' : (job.score_ATS > 0 ? '#10B981' : '#F5A623'),
+                                color: job.Statut === STATUS.ENVOYEE ? '#3B82F6' : '#10B981',
+                                fillColor: job.Statut === STATUS.ENVOYEE ? '#3B82F6' : '#10B981',
                                 fillOpacity: 0.1,
                                 stroke: false
                             }}
@@ -233,9 +234,11 @@ const MapView = ({ jobs }) => {
                             position={job.coords}
                             icon={divIcon({
                                 className: 'bg-transparent',
-                                html: `<div class="w-3 h-3 rounded-full border-2 border-white shadow-sm ${job.Statut === 'Envoyée' ? 'bg-blue-500' : (job.score_ATS > 0 ? 'bg-green-500' : 'bg-yellow-500')}"></div>`,
-                                iconSize: [12, 12],
-                                iconAnchor: [6, 6]
+                                html: job.Statut === STATUS.ENVOYEE
+                                    ? `<div class="w-3 h-3 rounded-full border-2 border-white shadow-sm bg-blue-500"></div>`
+                                    : `<div class="w-8 h-8 rounded-full border-2 border-white shadow-sm bg-green-500 flex items-center justify-center text-white text-[10px] font-bold">${job.score_ATS || 0}</div>`,
+                                iconSize: job.Statut === STATUS.ENVOYEE ? [12, 12] : [32, 32],
+                                iconAnchor: job.Statut === STATUS.ENVOYEE ? [6, 6] : [16, 16]
                             })}
                         >
                             <Popup className="custom-popup">
