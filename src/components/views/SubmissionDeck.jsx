@@ -1,4 +1,3 @@
-import React from 'react';
 import { Download, Copy, Send, Building, User, Linkedin, Mail, Phone, ExternalLink } from 'lucide-react';
 import { STATUS } from '../../utils/consts';
 

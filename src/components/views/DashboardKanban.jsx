@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { STATUS, getScoreColor } from '../../utils/consts';
 import { MapPin, Building, Euro, Calendar, Briefcase, ExternalLink, ThumbsUp, ThumbsDown, Clock, CheckCircle, FileText, Send, AlertTriangle } from 'lucide-react';
 import JobCard from '../cards/JobCard';
@@ -101,27 +101,6 @@ const DashboardKanban = ({ jobs, onStatusChange, onUpdateJob, accessToken }) => 
         onUpdateJob(updatedJob);
     };
 
-    const handleCheckEmails = (jobId) => {
-        console.log("Checking emails for", jobId);
-        // Simulation of checking emails
-        // Logic: if status is ENTRETIEN and we find keywords like "ne donnerons pas suite" in received emails -> switch to REFUSEE_APRES_ENTRETIEN
-
-        if (!selectedJob) return;
-
-        // Mock logic: Find if there is a 'received' email with 'malheureusement' or 'refus'
-        const hasRejectionEmail = selectedJob.Emails?.some(email =>
-            email.type === 'received' &&
-            (email.content.toLowerCase().includes('malheureusement') || email.content.toLowerCase().includes('ne donnerons pas suite'))
-        );
-
-        if (hasRejectionEmail && selectedJob.Statut === STATUS.ENTRETIEN) {
-            alert("⚠️ Un email de refus a été détecté ! Le statut de l'annonce a été mis à jour.");
-            onStatusChange(jobId, STATUS.REFUSEE_APRES_ENTRETIEN);
-            setSelectedJob({ ...selectedJob, Statut: STATUS.REFUSEE_APRES_ENTRETIEN });
-        } else {
-            alert("✅ Aucune nouvelle information critique détectée dans les emails.");
-        }
-    };
 
     return (
         <div className="h-full overflow-x-auto pb-20 md:pb-0 relative">

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import Header from './components/layout/Header';
 import Navigation from './components/layout/Navigation';
 import SwipeContainer from './components/views/SwipeContainer';

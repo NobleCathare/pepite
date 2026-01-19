@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useGoogleSheets } from '../../hooks/useGoogleSheets';
 
 import { Moon, Sun, Search, X } from 'lucide-react';

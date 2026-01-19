@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import JobCard from '../cards/JobCard';
 import { Filter, SlidersHorizontal } from 'lucide-react';
 

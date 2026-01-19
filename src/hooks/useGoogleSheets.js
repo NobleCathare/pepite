@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useGoogleLogin } from '@react-oauth/google';
 import { STATUS } from '../utils/consts';
-import { mockJobs } from '../utils/mockData';
 
 export function useGoogleSheets() {
     const [jobs, setJobs] = useState([]);
@@ -104,7 +103,7 @@ export function useGoogleSheets() {
                 if (!str) return fallback;
                 try {
                     return JSON.parse(str);
-                } catch (e) {
+                } catch {
                     console.warn("JSON Parse Warning for:", str);
                     return fallback;
                 }

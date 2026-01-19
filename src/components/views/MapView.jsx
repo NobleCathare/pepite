@@ -1,8 +1,7 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, CircleMarker, useMap } from 'react-leaflet';
+import { useState, useEffect, useMemo } from 'react';
+import { MapContainer, TileLayer, Marker, Popup, CircleMarker } from 'react-leaflet';
 import { divIcon } from 'leaflet';
 import { Briefcase, Building, ExternalLink, MapPin, Navigation as NavIcon, RefreshCw, AlertCircle, ThumbsUp, ThumbsDown } from 'lucide-react';
-import { createPortal } from 'react-dom';
 import { STATUS } from '../../utils/consts';
 
 // --- VISUAL CONSTANTS ---
@@ -82,7 +81,7 @@ const geocodeCity = async (city) => {
             CITY_CACHE[cleanName] = null;
             saveCache();
         }
-    } catch (error) {
+    } catch {
         // Warning suppressed
     }
     return null;

@@ -1,4 +1,3 @@
-import React from 'react';
 import { Layers, FileText, Send, BarChart2, Settings, Map } from 'lucide-react';
 import { STATUS } from '../../utils/consts';
 

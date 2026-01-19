@@ -350,6 +350,7 @@ const EditorPanel = ({ jobs, onAction, processingCount = 0 }) => {
                 message: parseField('Message_Contact')
             });
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedJob?.ID_Annonce]); // Depend on ID to ensure deep reset
 
     // Parse AI data for Left Panel

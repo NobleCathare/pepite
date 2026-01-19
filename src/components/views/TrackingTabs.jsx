@@ -95,9 +95,9 @@ const TrackingTabs = ({
     const extractGmailIdContainer = (input) => {
         const text = input.trim();
         if (text.startsWith('http')) {
-            const hashMatch = text.match(/[#\/](?:inbox|all|sent|starred|trash|spam|important|category\/.*?)\/([a-fA-F0-9]{16,})/);
+            const hashMatch = text.match(new RegExp("[#/](?:inbox|all|sent|starred|trash|spam|important|category/.*?)/([a-fA-F0-9]{16,})"));
             if (hashMatch && hashMatch[1]) return { type: 'id', value: hashMatch[1] };
-            const searchMatch = text.match(/[#\/]search\/([^\/]+)\/([a-zA-Z0-9_-]+)/);
+            const searchMatch = text.match(new RegExp("[#/]search/([^/]+)/([a-zA-Z0-9_-]+)"));
             if (searchMatch) return { type: 'search_url', id: searchMatch[2], query: decodeURIComponent(searchMatch[1]) };
             const parts = text.split('/');
             const lastPart = parts[parts.length - 1].split('?')[0].split('#')[0];

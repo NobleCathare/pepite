@@ -1,4 +1,3 @@
-import React from 'react';
 import { MapPin, Building, Euro, Calendar, Briefcase, ExternalLink, ThumbsUp, ThumbsDown, Clock, CheckCircle, FileText, Send } from 'lucide-react';
 import { SOURCES, getScoreColor, STATUS } from '../../utils/consts';
 
