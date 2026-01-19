@@ -350,7 +350,6 @@ const DashboardKanban = ({ jobs, onStatusChange, onUpdateJob, accessToken }) => 
                                     onAddNote={handleAddNote}
                                     onUpdateNote={handleUpdateNote}
                                     onDeleteNote={handleDeleteNote}
-                                    onCheckEmails={handleCheckEmails}
                                     onAddLink={handleAddLink}
                                     onDeleteLink={handleDeleteLink}
                                     accessToken={accessToken}

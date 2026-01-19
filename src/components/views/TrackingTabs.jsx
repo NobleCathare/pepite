@@ -77,7 +77,7 @@ const TrackingTabs = ({
         if (!dateString) return '-';
         try {
             return format(new Date(dateString), "d MMM yyyy HH:mm", { locale: fr });
-        } catch (e) {
+        } catch {
             return dateString;
         }
     };
@@ -143,7 +143,7 @@ const TrackingTabs = ({
             } else {
                 // Direct ID logic (simplified for this view)
                 let idToTry = extraction.type === 'search_url' ? extraction.id : extraction.value;
-                try { data = await fetchDetails(idToTry); } catch (e) { }
+                try { data = await fetchDetails(idToTry); } catch { /* ignore fallback */ }
                 if (!data && extraction.type === 'search_url' && extraction.query) {
                     const sRes = await executeSearch(extraction.query);
                     if (sRes.messages && sRes.messages.length > 0) data = await fetchDetails(sRes.messages[0].id);
