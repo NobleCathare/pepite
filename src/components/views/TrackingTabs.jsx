@@ -2,9 +2,8 @@ import React, { useState, useMemo } from 'react';
 import {
     StickyNote, Mail, Calendar,
     Plus, Trash2, Edit2, ExternalLink,
-    MoreVertical, CheckCircle, XCircle, Link as LinkIcon,
-    RefreshCw, ArrowRight, ArrowLeft, Save, X, Search,
-    MessageSquare, Clock, MapPin
+    MoreVertical, CheckCircle, X, Search,
+    Clock, MapPin, RefreshCw
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -18,7 +17,6 @@ const TrackingTabs = ({
     onAddNote,
     onUpdateNote,
     onDeleteNote,
-    onCheckEmails,
     onAddLink,
     onDeleteLink,
     accessToken // Passed from App -> Dashboard
