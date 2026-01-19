@@ -89,7 +89,7 @@ const geocodeCity = async (city) => {
 };
 
 // --- COMPONENT: MapView ---
-const MapView = ({ jobs }) => {
+const MapView = ({ jobs, onAction }) => {
     const [geocodedJobs, setGeocodedJobs] = useState([]);
     const [loading, setLoading] = useState(false);
     const [progress, setProgress] = useState(0);
@@ -159,6 +159,7 @@ const MapView = ({ jobs }) => {
     // Auto-run on mount (respecting rules)
     useEffect(() => {
         runGeocoding(false);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [jobs]); // Only re-try if jobs change significantly?
 
     return (

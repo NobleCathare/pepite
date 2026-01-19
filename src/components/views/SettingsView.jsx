@@ -514,7 +514,7 @@ const VisualFiltersTab = ({ data, onUpdate, onAdd, onDelete, onRecalculate, load
 };
 
 /* --- SUB-COMPONENT: RECHERCHE TAB (Interactive) --- */
-const SearchTab = ({ searchData, romeData, inseeData, onUpdate, onAdd, onDelete, onBulkUpdate, loading }) => {
+const SearchTab = ({ searchData, romeData, inseeData, onUpdate, onAdd, onDelete, onBulkUpdate }) => {
     // State for List
     const rules = searchData.map((r, i) => ({
         index: i,
@@ -1168,7 +1168,7 @@ const SearchTab = ({ searchData, romeData, inseeData, onUpdate, onAdd, onDelete,
     );
 };
 
-const SettingsView = ({ settings, updateSheetValues, appendSheetRow, jobs, updateJobStatus, loading }) => {
+const SettingsView = ({ settings, updateSheetValues, appendSheetRow, loading }) => {
     const [activeTab, setActiveTab] = useState('recherche');
 
     // --- SEARCH / ROME HANDLERS ---
