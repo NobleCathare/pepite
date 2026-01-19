@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, CircleMarker } from 'react-leaflet';
 import { divIcon } from 'leaflet';
 import { Briefcase, Building, ExternalLink, MapPin, Navigation as NavIcon, RefreshCw, AlertCircle, ThumbsUp, ThumbsDown } from 'lucide-react';
