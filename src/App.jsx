@@ -15,7 +15,7 @@ import { useWebhook } from './hooks/useWebhook';
 function App() {
   const [currentView, setCurrentView] = useState('triage');
   const [searchQuery, setSearchQuery] = useState(""); // Global Search State
-  const { jobs, updateJobStatus, settings, updateSheetValues, appendSheetRow, loading, fetchData, saveJobDraft } = useGoogleSheets();
+  const { jobs, updateJobStatus, updateJobData, settings, updateSheetValues, appendSheetRow, loading, fetchData, saveJobDraft, token } = useGoogleSheets();
   const { executeAction } = useWebhook();
 
   // Auto-refresh logic
@@ -42,7 +42,6 @@ function App() {
     [STATUS.PRETE]: jobs.filter(j => j.Statut === STATUS.PRETE).length,
   };
 
-  // --- FILTERING LOGIC ---
   // --- FILTERING LOGIC ---
   const filteredJobs = useMemo(() => {
     return jobs.filter(job => {
@@ -127,6 +126,8 @@ function App() {
         return <DashboardKanban
           jobs={filteredJobs.filter(j => [STATUS.ENVOYEE, STATUS.ENTRETIEN, STATUS.OFFRE, STATUS.REFUSEE].includes(j.Statut))}
           onStatusChange={updateJobStatus}
+          onUpdateJob={(job) => updateJobData(job.ID_Annonce, job)}
+          accessToken={token}
         />;
       case 'map':
         return <MapView jobs={filteredJobs} onAction={handleAction} />;

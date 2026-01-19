@@ -99,6 +99,17 @@ export function useGoogleSheets() {
                 'A traiter' // Raw value just in case
             ];
 
+            // Helper for safe JSON parsing
+            const safeJsonParse = (str, fallback = []) => {
+                if (!str) return fallback;
+                try {
+                    return JSON.parse(str);
+                } catch (e) {
+                    console.warn("JSON Parse Warning for:", str);
+                    return fallback;
+                }
+            };
+
             const mappedJobs = allRows.map((row, index) => {
                 const rawStatus = row[27];
                 const normalizedStatut = normalizeStatus(rawStatus);
@@ -135,6 +146,9 @@ export function useGoogleSheets() {
                     LM_Texte: row[39] || '',
                     Message_Contact: row[40] || '',
                     Combined_PDF_URL: row[41] || '', // Lien unique PDF (Col AP)
+                    Notes: safeJsonParse(row[45]), // AT
+                    Emails: safeJsonParse(row[43]), // AR
+                    Events: safeJsonParse(row[44]), // AS
                     rowIndex: index + 2,
                     isRecent: index >= startIndex
                 };
@@ -209,6 +223,31 @@ export function useGoogleSheets() {
                 });
             }
 
+            // --- PERSISTENCE FOR TRACKING (Notes, Emails, Events) ---
+            // AQ (42) is RESERVED.
+            // Emails = AR (43)
+            // Events = AS (44)
+            // Notes  = AT (45)
+
+            if (additionalData.Notes || additionalData.Emails || additionalData.Events) {
+                // Range AR:AT covers: AR(Emails), AS(Events), AT(Notes)
+                const rangeTracking = `Annonces!AR${job.rowIndex}:AT${job.rowIndex}`;
+                const valuesTracking = [[
+                    additionalData.Emails ? JSON.stringify(additionalData.Emails) : (job.Emails ? JSON.stringify(job.Emails) : "[]"),
+                    additionalData.Events ? JSON.stringify(additionalData.Events) : (job.Events ? JSON.stringify(job.Events) : "[]"),
+                    additionalData.Notes ? JSON.stringify(additionalData.Notes) : (job.Notes ? JSON.stringify(job.Notes) : "[]")
+                ]];
+
+                const urlTracking = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${rangeTracking}?valueInputOption=RAW`;
+                await fetch(urlTracking, {
+                    method: 'PUT',
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ values: valuesTracking })
+                });
+            }
 
         } catch (e) {
             console.error("Update Error", e);
@@ -312,6 +351,7 @@ export function useGoogleSheets() {
         loading,
         error,
         isAuth,
+        token, // <--- Exposed for API calls
         login,
         logout,
         updateJobStatus,
@@ -319,6 +359,21 @@ export function useGoogleSheets() {
         appendSheetRow,
         fetchData,      // <--- Exposed
         saveJobDraft,   // <--- Exposed
-        updateJobData: () => { }
+        updateJobData: async (id, data) => {
+            // 1. Optimistic Update
+            setJobs(prev => prev.map(job =>
+                job.ID_Annonce === id
+                    ? { ...job, ...data }
+                    : job
+            ));
+
+            // 2. Persistence
+            // We reuse updateJobStatus logic which now handles generic data saving
+            const job = jobs.find(j => j.ID_Annonce === id);
+            if (job) {
+                // Pass current status to avoid changing it
+                await updateJobStatus(id, job.Statut, data);
+            }
+        }
     };
 }

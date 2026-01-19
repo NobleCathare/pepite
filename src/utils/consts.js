@@ -9,6 +9,7 @@ export const STATUS = {
     OFFRE: "Offre",
     FILTRE_ATS: "Filtre ATS",
     REFUSEE: "Refusée",
+    REFUSEE_APRES_ENTRETIEN: "Refusée après entretien",
     NON_VALIDEE: "Non validée"
 };
 

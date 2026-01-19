@@ -327,5 +327,34 @@ export const mockJobs = [
         Statut: "Refusée",
         Source: "FT",
         Date_Publication: "2023-08-15"
+    },
+    {
+        ID_Annonce: "WTTJ_016",
+        Titre_poste: "Lead Developer",
+        Entreprise: "NextGen Corp",
+        Lieu: "Lyon",
+        Type_contrat: "CDI",
+        Salaire: "75k€",
+        URL_offre: "https://example.com/job16",
+        URL_Entreprise: "",
+        Description: "Lead dev pour nouvelle squad...",
+        score_ATS: 82,
+        remarque_ATS: "Très bon fit.",
+        _score_details: "Lead (+5)",
+        data_pour_agent_redacteur: null,
+        Statut: "Refusée après entretien",
+        Source: "WTTJ",
+        Date_Publication: "2023-08-10",
+        Notes: [
+            { date: "2023-09-01T10:00:00", content: "<p>Premier contact RH <strong>très positif</strong>.</p>" },
+            { date: "2023-09-05T14:00:00", content: "<p>Entretien technique ok, mais <em>doute sur le fit culturel</em>.</p>" }
+        ],
+        Emails: [
+            { id: 1, type: 'sent', date: "2023-08-12T09:00:00", subject: "Candidature Lead Dev", from: "me@example.com", content: "Bonjour, voici ma candidature..." },
+            { id: 2, type: 'received', date: "2023-09-10T11:00:00", subject: "Réponse suite entretien", from: "rh@nextgencorp.com", content: "Bonjour, Malheureusement nous ne donnerons pas suite..." }
+        ],
+        Events: [
+            { id: 1, title: "Entretien RH", date: "2023-09-01T10:00:00", location: "Google Meet" }
+        ]
     }
 ];
