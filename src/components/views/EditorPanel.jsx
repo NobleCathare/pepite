@@ -339,7 +339,7 @@ const EditorPanel = ({ jobs, onAction, processingCount = 0 }) => {
             const parseField = (field) => {
                 if (!selectedJob[field]) return null;
                 if (typeof selectedJob[field] === 'string') {
-                    try { return JSON.parse(selectedJob[field]); } catch (e) { return null; }
+                    try { return JSON.parse(selectedJob[field]); } catch { return null; }
                 }
                 return selectedJob[field];
             };
@@ -359,7 +359,7 @@ const EditorPanel = ({ jobs, onAction, processingCount = 0 }) => {
             return typeof selectedJob.JSON_Analysis === 'string'
                 ? JSON.parse(selectedJob.JSON_Analysis)
                 : selectedJob.JSON_Analysis;
-        } catch (e) {
+        } catch {
             // Try legacy field
             if (selectedJob.data_pour_agent_redacteur) return JSON.parse(selectedJob.data_pour_agent_redacteur);
             return null;
