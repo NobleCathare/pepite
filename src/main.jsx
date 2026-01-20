@@ -5,7 +5,7 @@ import './index.css'
 import 'leaflet/dist/leaflet.css';
 import App from './App.jsx'
 
-const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || 'placeholder-client-id';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
