@@ -4,7 +4,7 @@ import { useGoogleSheets } from '../../hooks/useGoogleSheets';
 import { Moon, Sun, Search, X } from 'lucide-react';
 
 const Header = ({ searchQuery, setSearchQuery }) => {
-    const { isAuth, login, logout } = useGoogleSheets();
+    const { isAuth, login, logout, user } = useGoogleSheets();
     const [darkMode, setDarkMode] = useState(false);
 
     useEffect(() => {
@@ -83,8 +83,12 @@ const Header = ({ searchQuery, setSearchQuery }) => {
                     </div>
 
                     {isAuth ? (
-                        <button onClick={logout} className="h-9 w-9 rounded-full bg-pepite-light dark:bg-gray-800 flex items-center justify-center text-pepite-dark dark:text-gray-200 font-bold text-sm hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
-                            CP
+                        <button onClick={logout} className="h-9 w-9 rounded-full bg-pepite-light dark:bg-gray-800 flex items-center justify-center text-pepite-dark dark:text-gray-200 font-bold text-sm hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors overflow-hidden border border-gray-200 dark:border-gray-700" title="Se déconnecter">
+                            {user?.picture ? (
+                                <img src={user.picture} alt={user.name} className="h-full w-full object-cover" />
+                            ) : (
+                                <span>{user?.given_name?.[0]}{user?.family_name?.[0] || 'CP'}</span>
+                            )}
                         </button>
                     ) : (
                         <button onClick={login} className="text-sm bg-pepite-gold text-white px-5 py-2 rounded-full font-semibold hover:bg-yellow-500 shadow-sm transition-all">

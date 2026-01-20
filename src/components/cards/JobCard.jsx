@@ -125,7 +125,7 @@ const JobCard = ({ job, onAction, variant = 'triage', children }) => {
     const isKanban = variant === 'kanban';
 
     return (
-        <div className={`bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-5 hover:shadow-md transition-all duration-200 flex flex-col h-full ${isKanban ? 'p-3' : ''}`}>
+        <div className={`bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-5 hover:shadow-md transition-all duration-200 flex flex-col min-h-full ${isKanban ? 'p-3' : ''}`}>
             {/* Header Card */}
             <div className="flex justify-between items-start mb-3 flex-none">
                 <div className="flex flex-col items-start gap-1">

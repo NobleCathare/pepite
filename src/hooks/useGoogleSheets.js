@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useGoogleLogin } from '@react-oauth/google';
 import { STATUS } from '../utils/consts';
 
@@ -9,13 +9,30 @@ export function useGoogleSheets() {
     const [token, setToken] = useState(localStorage.getItem('google_token'));
     const [isAuth, setIsAuth] = useState(!!localStorage.getItem('google_token'));
 
+    const [user, setUser] = useState(JSON.parse(localStorage.getItem('google_user')) || null);
+
     const SCOPE = import.meta.env.VITE_GOOGLE_SCOPES;
+
+    // Helper to fetch user info
+    const fetchUserInfo = async (accessToken) => {
+        try {
+            const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                headers: { Authorization: `Bearer ${accessToken}` },
+            });
+            const data = await res.json();
+            setUser(data);
+            localStorage.setItem('google_user', JSON.stringify(data));
+        } catch (err) {
+            console.error('Failed to fetch user info', err);
+        }
+    };
 
     const login = useGoogleLogin({
         onSuccess: (codeResponse) => {
             setToken(codeResponse.access_token);
             setIsAuth(true);
             localStorage.setItem('google_token', codeResponse.access_token);
+            fetchUserInfo(codeResponse.access_token);
         },
         onError: (error) => console.log('Login Failed:', error),
         scope: SCOPE
@@ -25,7 +42,9 @@ export function useGoogleSheets() {
         setToken(null);
         setIsAuth(false);
         setJobs([]);
+        setUser(null);
         localStorage.removeItem('google_token');
+        localStorage.removeItem('google_user');
     };
 
     const [settings, setSettings] = useState({
@@ -48,7 +67,7 @@ export function useGoogleSheets() {
         return STATUS.NOUVELLE;
     };
 
-    const fetchData = async ({ silent = false } = {}) => {
+    const fetchData = useCallback(async ({ silent = false } = {}) => {
         if (!token) return;
         if (!silent) setLoading(true);
         setError(null);
@@ -175,7 +194,7 @@ export function useGoogleSheets() {
         } finally {
             if (!silent) setLoading(false);
         }
-    };
+    }, [token]);
 
     const updateJobStatus = async (id, newStatus, additionalData = {}, skipSave = false) => {
         setJobs(prev => prev.map(job =>
@@ -347,6 +366,7 @@ export function useGoogleSheets() {
     return {
         jobs,
         settings,
+        user, // <--- Exposed
         loading,
         error,
         isAuth,
