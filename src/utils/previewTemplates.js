@@ -253,10 +253,10 @@ const generateLMHTML = (data, signatureImg) => {
             <div class="object-line">Objet : ${rawInput.objet || ''}</div>
             <div class="letter-body">
                 <p>Madame, Monsieur,</p>
-                <p> ${corps.accroche || ''}</p>
-                <p> ${corps.apport_candidat || ''}</p>
-                <p> ${corps.projection || ''}</p>
-                <p> ${rawInput.politesse || ''}</p>
+                <div>${corps.accroche || ''}</div>
+                <div>${corps.apport_candidat || ''}</div>
+                <div>${corps.projection || ''}</div>
+                <p>${rawInput.politesse || ''}</p>
             </div>
             <div class="signature-block">
                 <div class="signature-name-typed">Franck Ferrenbach</div>

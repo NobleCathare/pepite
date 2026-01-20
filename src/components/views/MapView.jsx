@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, CircleMarker } from 'react-leaflet';
 import { divIcon } from 'leaflet';
-import { Briefcase, Building, ExternalLink, MapPin, Navigation as NavIcon, RefreshCw, AlertCircle, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { RefreshCw, MapPin } from 'lucide-react';
 import { STATUS } from '../../utils/consts';
+import JobCard from '../cards/JobCard';
 
 // --- VISUAL CONSTANTS ---
 const FRANCE_CENTER = [46.603354, 1.888334];
@@ -218,6 +219,22 @@ const MapView = ({ jobs, onAction }) => {
                     className="dark:filter dark:invert dark:grayscale dark:contrast-75"
                 />
 
+                <style>{`
+                    .dark .leaflet-popup-content-wrapper, .dark .leaflet-popup-tip {
+                        background-color: #1f2937 !important;
+                        color: #f3f4f6 !important;
+                        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5) !important;
+                        border: 1px solid #374151 !important;
+                    }
+                    .dark .leaflet-popup-close-button {
+                        color: #9ca3af !important;
+                    }
+                    .leaflet-popup-content {
+                        margin: 0 !important;
+                        width: auto !important;
+                    }
+                `}</style>
+
                 {geocodedJobs.map(job => (
                     <React.Fragment key={job.ID_Annonce}>
                         <CircleMarker
@@ -242,37 +259,12 @@ const MapView = ({ jobs, onAction }) => {
                             })}
                         >
                             <Popup className="custom-popup">
-                                <div className="p-1 min-w-[200px]">
-                                    <div className="flex justify-between items-start mb-2">
-                                        <h3 className="font-bold text-sm text-gray-800 leading-tight">{job.Titre_poste}</h3>
-                                        <span className={`px-1.5 py-0.5 text-[10px] font-bold rounded ${job.score_ATS > 0 ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                                            {job.score_ATS} pts
-                                        </span>
-                                    </div>
-                                    <div className="flex items-center text-xs text-gray-500 mb-2">
-                                        <Building size={12} className="mr-1" /> {job.Entreprise}
-                                    </div>
-                                    <div className="flex gap-2 mt-2">
-                                        <a href={job.URL_offre} target="_blank" className="flex-1 bg-pepite-dark text-white text-xs py-1.5 rounded text-center hover:bg-black transition-colors">
-                                            Voir l'offre
-                                        </a>
-                                    </div>
-                                    <div className="flex gap-2 mt-2 pt-2 border-t border-gray-100 justify-center">
-                                        <button
-                                            onClick={() => onAction('REFUSE', job.ID_Annonce)}
-                                            className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
-                                            title="Refuser"
-                                        >
-                                            <ThumbsDown size={14} />
-                                        </button>
-                                        <button
-                                            onClick={() => onAction('KEEP', job.ID_Annonce)}
-                                            className="p-1.5 text-pepite-gold hover:bg-yellow-50 rounded-full transition-colors"
-                                            title="Conserver"
-                                        >
-                                            <ThumbsUp size={14} />
-                                        </button>
-                                    </div>
+                                <div className="w-[280px]">
+                                    <JobCard
+                                        job={job}
+                                        variant="map"
+                                        onAction={onAction}
+                                    />
                                 </div>
                             </Popup>
                         </Marker>

@@ -108,7 +108,7 @@ const DashboardKanban = ({ jobs, onStatusChange, onUpdateJob, accessToken }) => 
             <div className="absolute top-0 right-4 z-10">
                 <button
                     onClick={() => setSortByDate(!sortByDate)}
-                    className={`text-xs px-3 py-1 rounded-full border transition-colors ${sortByDate ? 'bg-blue-100 text-blue-700 border-blue-200' : 'bg-white text-gray-500 border-gray-200'}`}
+                    className={`text-xs px-3 py-1 rounded-full border transition-colors ${sortByDate ? 'bg-pepite-bronze/10 text-pepite-bronze border-pepite-bronze/20' : 'bg-white text-gray-500 border-gray-200'}`}
                 >
                     {sortByDate ? 'Tri par Date Traitement' : 'Tri par Défaut'}
                 </button>
@@ -144,59 +144,22 @@ const DashboardKanban = ({ jobs, onStatusChange, onUpdateJob, accessToken }) => 
                                 {colJobs.map(job => (
                                     <div
                                         key={job.ID_Annonce}
-                                        className="transform scale-90 origin-top text-xs cursor-move"
+                                        className="transform scale-90 origin-top cursor-move"
                                         draggable
                                         onDragStart={(e) => handleDragStart(e, job.ID_Annonce)}
                                     >
-                                        <div className={`bg-white dark:bg-gray-700 p-3 rounded-lg shadow-sm border ${job.Statut === STATUS.REFUSEE_APRES_ENTRETIEN ? 'border-orange-300 bg-orange-50 dark:border-orange-800' : 'border-gray-100 dark:border-gray-600'} hover:shadow-md transition-all`}>
-
-                                            {job.Statut === STATUS.REFUSEE_APRES_ENTRETIEN && (
-                                                <div className="mb-2 flex items-center text-orange-600 dark:text-orange-400 font-bold text-[10px] uppercase tracking-wide">
-                                                    <AlertTriangle size={10} className="mr-1" />
-                                                    Refus Ap. Entretien
-                                                </div>
-                                            )}
-
-                                            <div className="font-bold text-gray-800 dark:text-white mb-1">{job.Titre_poste}</div>
-                                            <div className="text-gray-500 dark:text-gray-400 mb-2">{job.Entreprise}</div>
-
-                                            <div className="flex justify-between items-center text-[10px] text-gray-400 mb-2">
-                                                <span>{job.Date_Traitement ? new Date(job.Date_Traitement).toLocaleDateString() : '-'}</span>
-                                                <div className="flex gap-2 font-bold text-xs">
-                                                    <span className={getScoreColor(job.score_ATS)}>
-                                                        {job.score_ATS}
-                                                    </span>
-                                                    {job.score_AI > 0 && (
-                                                        <span className="text-purple-600">
-                                                            {job.score_AI}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            </div>
-
-                                            <button
-                                                onClick={() => {
-                                                    setSelectedJob(job);
+                                        <JobCard
+                                            job={job}
+                                            variant="kanban"
+                                            onAction={(type, id, status) => {
+                                                if (type === 'DETAILS') {
+                                                    setSelectedJob(id); // JobCard passes job object as id here based on my refactor
                                                     setActiveModalTab('general');
-                                                }}
-                                                className="w-full text-center text-xs bg-gray-50 hover:bg-gray-100 text-gray-600 py-1 rounded mb-2"
-                                            >
-                                                Voir détails
-                                            </button>
-
-                                            {col.id === STATUS.ENTRETIEN && (
-                                                <div className="mt-2 pt-2 border-t border-gray-50 flex justify-center">
-                                                    <a
-                                                        href={`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(`Entretien - ${job.Titre_poste} - ${job.Entreprise}`)}&details=${encodeURIComponent(`Entretien pour le poste de ${job.Titre_poste} chez ${job.Entreprise}.\n\nLien offre : ${job.URL_offre || 'N/A'}\n\nContact : ${job.Prenom_Recruteur || ''} ${job.Nom_Recruteur || ''}`)}&location=${encodeURIComponent(job.Lieu || '')}`}
-                                                        target="_blank"
-                                                        rel="noreferrer"
-                                                        className="text-indigo-600 font-bold bg-indigo-50 px-3 py-1.5 rounded hover:bg-indigo-100 w-full text-center block"
-                                                    >
-                                                        Planifier Entretien
-                                                    </a>
-                                                </div>
-                                            )}
-                                        </div>
+                                                } else if (type === 'STATUS_CHANGE') {
+                                                    onStatusChange(id, status);
+                                                }
+                                            }}
+                                        />
                                     </div>
                                 ))}
                                 {colJobs.length === 0 && (

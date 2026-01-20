@@ -22,10 +22,12 @@ export default {
                     950: '#0a0a0a',
                 },
                 pepite: {
-                    gold: '#F5A623',
-                    yellow: '#FFD700',
-                    dark: '#1F2937', // Updated to match a deep anthracite
-                    light: '#F3F4F6',
+                    cream: '#F2E5BD',
+                    gold: '#F2B441',
+                    bronze: '#D98D30',
+                    gray: '#404040',
+                    dark: '#1A1A1A', // Softened dark gray for elegance
+                    yellow: '#F2B441', // Aliasing yellow to gold from palette
                     white: '#FFFFFF',
                 }
             },

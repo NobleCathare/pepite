@@ -1122,7 +1122,7 @@ const SearchTab = ({ searchData, romeData, inseeData, onUpdate, onAdd, onDelete,
                                                     onClick={() => toggleRome(rome.code)}
                                                     className={`w-full text-left px-3 py-2.5 text-xs rounded-lg flex items-center justify-between group transition-all ${selected
                                                         ? 'bg-pepite-gold/10 text-pepite-dark font-medium border border-pepite-gold/30'
-                                                        : 'hover:bg-gray-50 dark:hover:bg-gray-700/50 text-gray-600 dark:text-gray-300 border border-transparent'
+                                                        : 'hover:bg-gray-50 dark:hover:bg-gray-700/50 text-gray-600 dark:text-gray-300 border border-transparent hover:text-gray-900 dark:hover:text-white'
                                                         }`}
                                                 >
                                                     <div className="flex flex-col items-start truncate pr-2">

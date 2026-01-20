@@ -4,6 +4,99 @@
 
 @layer base {
     body {
-        @apply transition-colors duration-200 bg-gray-50 dark:bg-gray-900 dark:text-white;
+        @apply transition-colors duration-200 bg-gray-50 dark:bg-pepite-dark dark:text-white;
+    }
+
+    a:not([role="button"]),
+    .link {
+        @apply text-pepite-bronze hover:text-pepite-gold transition-colors duration-200;
+        text-decoration: none;
+    }
+
+    /* WYSIWYG Editor Styles (Global) */
+    .rsw-editor {
+        border: none !important;
+        background: transparent !important;
+    }
+
+    .rsw-ce {
+        min-height: 40px;
+        padding: 10px !important;
+        overflow: hidden !important;
+        height: auto !important;
+    }
+
+    /* Dark Mode Editor */
+    .dark .rsw-toolbar {
+        background: #1A1A1A !important;
+        border-bottom: 1px solid #404040 !important;
+    }
+
+    .dark .rsw-toolbar button {
+        color: #F2E5BD !important;
+    }
+
+    .dark .rsw-toolbar button:hover {
+        background: #404040 !important;
+    }
+
+    .dark .rsw-ce {
+        color: #f3f4f6 !important;
+        /* Basic text in gray-100 to match inputs */
+    }
+
+    .dark .rsw-ce b,
+    .dark .rsw-ce strong,
+    .dark .rsw-ce h1,
+    .dark .rsw-ce h2,
+    .dark .rsw-ce h3,
+    .dark .rsw-ce li,
+    .dark .rsw-ce i,
+    .dark .rsw-ce em,
+    .dark .rsw-ce a {
+        color: #F2E5BD !important;
+    }
+
+    .dark .rsw-toolbar select {
+        background: #1A1A1A !important;
+        color: #F2E5BD !important;
+        border: 1px solid #404040 !important;
+    }
+
+    .dark .rsw-toolbar select option {
+        background: #1A1A1A !important;
+        color: #F2E5BD !important;
+    }
+
+    /* Selection Color */
+    .rsw-ce::selection {
+        background: #F2B441 !important;
+        color: #0D0D0D !important;
+    }
+
+    /* Layout Specific: Pepite Wrapper (used in EditorPanel) */
+    .rsw-pepite-container .rsw-toolbar {
+        display: none !important;
+        padding: 4px !important;
+    }
+
+    .rsw-pepite-container:focus-within .rsw-toolbar {
+        display: flex !important;
+    }
+
+    /* Rendered Content Styles (prose) */
+    .dark .prose {
+        color: #f3f4f6 !important;
+    }
+
+    .dark .prose strong,
+    .dark .prose b,
+    .dark .prose h1,
+    .dark .prose h2,
+    .dark .prose h3,
+    .dark .prose h4,
+    .dark .prose li,
+    .dark .prose a {
+        color: #F2E5BD !important;
     }
 }

@@ -13,8 +13,13 @@ import { useGoogleSheets } from './hooks/useGoogleSheets';
 import { useWebhook } from './hooks/useWebhook';
 
 function App() {
-  const [currentView, setCurrentView] = useState('triage');
+  const [currentView, setCurrentView] = useState(() => localStorage.getItem('sasre_current_view') || 'triage');
   const [searchQuery, setSearchQuery] = useState(""); // Global Search State
+
+  useEffect(() => {
+    localStorage.setItem('sasre_current_view', currentView);
+  }, [currentView]);
+
   const { jobs, updateJobStatus, updateJobData, settings, updateSheetValues, appendSheetRow, loading, fetchData, saveJobDraft, token } = useGoogleSheets();
   const { executeAction } = useWebhook();
 
@@ -104,6 +109,32 @@ function App() {
           Date_Envoie: new Date().toISOString(),
           Date_Traitement: new Date().toISOString() // Column S
         });
+        break;
+      case 'STATUS_CHANGE':
+        updateJobStatus(id, payload);
+        break;
+      case 'REGENERATE':
+        // 1. Update status locally
+        updateJobStatus(id, STATUS.TRAITEMENT);
+
+        // 2. Wait 2 seconds then trigger webhook
+        setTimeout(async () => {
+          try {
+            await fetch('https://n8n.circumambule.synology.me/webhook/98eb872e-ef37-4771-9373-af6a353355ae', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                id: id,
+                action: 'regenerate',
+                timestamp: new Date().toISOString()
+              })
+            });
+            alert('Régénération lancée !');
+          } catch (e) {
+            console.error('Webhook failed', e);
+            alert('Erreur lors de la régénération');
+          }
+        }, 2000);
         break;
       default:
         console.warn("Unknown action", action);

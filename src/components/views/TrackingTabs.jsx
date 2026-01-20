@@ -332,12 +332,14 @@ const TrackingTabs = ({
 
                 {inputMode === 'note' && (
                     <div className="space-y-3">
-                        <HtmlEditor
-                            value={noteContent}
-                            onChange={(e) => setNoteContent(e.target.value)}
-                            placeholder="Contenu de la note..."
-                            containerProps={{ style: { height: '150px' } }}
-                        />
+                        <div className="rsw-pepite-container">
+                            <HtmlEditor
+                                value={noteContent}
+                                onChange={(e) => setNoteContent(e.target.value)}
+                                placeholder="Contenu de la note..."
+                                containerProps={{ style: { height: '150px' } }}
+                            />
+                        </div>
                         <div className="flex items-center gap-2">
                             <label className="text-xs text-gray-500 dark:text-gray-400">Date :</label>
                             <input
@@ -544,7 +546,7 @@ const TrackingTabs = ({
                 <div className="flex gap-2">
                     <button
                         onClick={() => setInputMode('note')}
-                        className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${inputMode === 'note' ? 'bg-blue-600 text-white' : 'bg-blue-50 text-blue-700 hover:bg-blue-100'}`}
+                        className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${inputMode === 'note' ? 'bg-pepite-bronze text-white' : 'bg-pepite-bronze/10 text-pepite-bronze hover:bg-pepite-bronze/20'}`}
                     >
                         <StickyNote size={14} />
                         Note

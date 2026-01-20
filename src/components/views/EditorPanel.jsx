@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Layout, FileText, Mail, Info, Check, X, ChevronRight, Wand2, Plus, Trash2, Eye, Loader2 } from 'lucide-react';
+import { Layout, FileText, Mail, Info, ChevronRight, Wand2, Plus, Trash2, Eye, Loader2, RefreshCw, ThumbsUp, ThumbsDown, X } from 'lucide-react';
+import HtmlEditor from 'react-simple-wysiwyg';
 import { generateCVHTML, generateLMHTML } from '../../utils/previewTemplates';
 import signatureCss from '../../Signature.css?inline'; // Import CSS as string to extract base64
-
-/* --- SUB-COMPONENTS FOR FORMS --- */
+import JobCard from '../cards/JobCard';
+import { STATUS } from '../../utils/consts';
 
 const CVEditor = ({ content, onChange }) => {
     // Default structure based on user example
@@ -57,11 +58,13 @@ const CVEditor = ({ content, onChange }) => {
 
             <div className="space-y-2">
                 <label className="text-xs font-bold text-gray-500 uppercase">Profil Professionnel</label>
-                <textarea
-                    className="w-full p-2 border border-gray-200 dark:border-gray-600 rounded text-sm text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 min-h-[100px] focus:border-blue-500 outline-none transition-colors"
-                    value={data.profil_professionnel}
-                    onChange={(e) => updateField('profil_professionnel', e.target.value)}
-                />
+                <div className="rsw-pepite-container">
+                    <HtmlEditor
+                        className="w-full border border-gray-200 dark:border-gray-600 rounded text-sm text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 focus-within:border-blue-500 outline-none transition-colors"
+                        value={data.profil_professionnel}
+                        onChange={(e) => updateField('profil_professionnel', e.target.value)}
+                    />
+                </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -72,7 +75,7 @@ const CVEditor = ({ content, onChange }) => {
                     {data.competences?.map((comp, i) => (
                         <div key={i} className="flex gap-2">
                             <input
-                                className="flex-1 p-1.5 border border-gray-200 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200"
+                                className="flex-1 p-1.5 border border-gray-200 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100"
                                 value={comp}
                                 onChange={(e) => updateArrayItem('competences', i, e.target.value)}
                             />
@@ -87,7 +90,7 @@ const CVEditor = ({ content, onChange }) => {
                     {data.outils?.map((outil, i) => (
                         <div key={i} className="flex gap-2">
                             <input
-                                className="flex-1 p-1.5 border border-gray-200 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200"
+                                className="flex-1 p-1.5 border border-gray-200 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100"
                                 value={outil}
                                 onChange={(e) => updateArrayItem('outils', i, e.target.value)}
                             />
@@ -124,11 +127,13 @@ const CVEditor = ({ content, onChange }) => {
                             <p className="text-xs font-semibold text-gray-500">Réalisations</p>
                             {exp.realisations?.map((real, r) => (
                                 <div key={r} className="flex gap-2">
-                                    <textarea
-                                        className="flex-1 p-1.5 border border-gray-200 dark:border-gray-600 rounded text-sm h-16 resize-none bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200"
-                                        value={real}
-                                        onChange={(e) => updateExpList(i, 'realisations', r, e.target.value)}
-                                    />
+                                    <div className="flex-1 rsw-pepite-container">
+                                        <HtmlEditor
+                                            className="w-full border border-gray-200 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-100"
+                                            value={real}
+                                            onChange={(e) => updateExpList(i, 'realisations', r, e.target.value)}
+                                        />
+                                    </div>
                                     <button onClick={() => {
                                         const newReal = [...exp.realisations];
                                         newReal.splice(r, 1);
@@ -139,7 +144,7 @@ const CVEditor = ({ content, onChange }) => {
                             <button onClick={() => {
                                 const newReal = [...(exp.realisations || []), ""];
                                 updateExp(i, 'realisations', newReal);
-                            }} className="text-xs text-blue-500 hover:underline">+ Ajouter réalisation</button>
+                            }} className="text-xs text-pepite-gold font-bold hover:underline">+ Ajouter réalisation</button>
                         </div>
                     </div>
                 ))}
@@ -186,29 +191,35 @@ const LMEditor = ({ content, onChange }) => {
 
                 <div className="space-y-1">
                     <span className="text-xs text-blue-600 font-semibold">Accroche (Le Vous)</span>
-                    <textarea
-                        className="w-full p-3 border border-gray-200 dark:border-gray-600 rounded text-sm text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 min-h-[100px] focus:border-blue-500 outline-none"
-                        value={data.corps?.accroche || ''}
-                        onChange={(e) => updateNested('corps', 'accroche', e.target.value)}
-                    />
+                    <div className="rsw-pepite-container">
+                        <HtmlEditor
+                            className="w-full border border-gray-200 dark:border-gray-600 rounded text-sm text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 focus-within:border-blue-500 outline-none"
+                            value={data.corps?.accroche || ''}
+                            onChange={(e) => updateNested('corps', 'accroche', e.target.value)}
+                        />
+                    </div>
                 </div>
 
                 <div className="space-y-1">
                     <span className="text-xs text-blue-600 font-semibold">Apport Candidat (Le Moi)</span>
-                    <textarea
-                        className="w-full p-3 border border-gray-200 dark:border-gray-600 rounded text-sm text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 min-h-[150px] focus:border-blue-500 outline-none"
-                        value={data.corps?.apport_candidat || ''}
-                        onChange={(e) => updateNested('corps', 'apport_candidat', e.target.value)}
-                    />
+                    <div className="rsw-pepite-container">
+                        <HtmlEditor
+                            className="w-full border border-gray-200 dark:border-gray-600 rounded text-sm text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 focus-within:border-blue-500 outline-none"
+                            value={data.corps?.apport_candidat || ''}
+                            onChange={(e) => updateNested('corps', 'apport_candidat', e.target.value)}
+                        />
+                    </div>
                 </div>
 
                 <div className="space-y-1">
                     <span className="text-xs text-blue-600 font-semibold">Projection (Le Nous)</span>
-                    <textarea
-                        className="w-full p-3 border border-gray-200 dark:border-gray-600 rounded text-sm text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 min-h-[100px] focus:border-blue-500 outline-none"
-                        value={data.corps?.projection || ''}
-                        onChange={(e) => updateNested('corps', 'projection', e.target.value)}
-                    />
+                    <div className="rsw-pepite-container">
+                        <HtmlEditor
+                            className="w-full border border-gray-200 dark:border-gray-600 rounded text-sm text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 focus-within:border-blue-500 outline-none"
+                            value={data.corps?.projection || ''}
+                            onChange={(e) => updateNested('corps', 'projection', e.target.value)}
+                        />
+                    </div>
                 </div>
             </div>
 
@@ -249,11 +260,13 @@ const MessageEditor = ({ content, onChange }) => {
             </div>
             <div className="space-y-2">
                 <label className="text-xs font-bold text-gray-500 uppercase">Corps de l'email</label>
-                <textarea
-                    className="w-full p-4 border border-gray-200 dark:border-gray-600 rounded text-sm text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 min-h-[300px] focus:border-blue-500 outline-none whitespace-pre-wrap transition-colors"
-                    value={data.corps_email}
-                    onChange={(e) => onChange({ ...data, corps_email: e.target.value })}
-                />
+                <div className="rsw-pepite-container">
+                    <HtmlEditor
+                        className="w-full border border-gray-200 dark:border-gray-600 rounded text-sm text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 focus-within:border-blue-500 outline-none transition-colors"
+                        value={data.corps_email}
+                        onChange={(e) => onChange({ ...data, corps_email: e.target.value })}
+                    />
+                </div>
             </div>
         </div>
     );
@@ -373,19 +386,21 @@ const EditorPanel = ({ jobs, onAction, processingCount = 0 }) => {
         onAction('VALIDATE', selectedJobId, editedContent); // Sends objects
     };
 
+    const handleRegenerate = () => {
+        onAction('REGENERATE', selectedJobId);
+    };
+
     const handleTabChange = (tab, newContent) => {
         setEditedContent(prev => ({ ...prev, [tab]: newContent }));
     };
-
     if (!selectedJob) {
         return (
-            <div className="flex flex-col items-center justify-center h-full min-h-[500px] bg-white rounded-xl shadow-sm border border-gray-100 text-gray-400">
+            <div className="flex flex-col items-center justify-center h-full min-h-[500px] bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 text-gray-400 transition-colors">
                 <Layout size={48} className="mb-4 opacity-20" />
                 <p className="text-lg font-medium">Aucun dossier en cours de rédaction</p>
             </div>
         );
     }
-
     return (
         <div className="flex flex-col md:flex-row h-auto md:h-[calc(100vh-140px)] gap-4 pb-20 md:pb-0">
 
@@ -419,50 +434,45 @@ const EditorPanel = ({ jobs, onAction, processingCount = 0 }) => {
                 </div>
 
                 {/* Job Details & AI Strategy */}
-                <div className="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex-1 overflow-y-auto transition-colors">
-                    <div className="mb-4">
-                        <h2 className="text-lg font-bold text-gray-900 dark:text-white leading-tight">{selectedJob.Titre_poste}</h2>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">{selectedJob.Entreprise}</p>
-                        <a href={selectedJob.URL_offre} target="_blank" className="text-xs text-blue-500 hover:underline mt-1 block">Voir l'offre originale</a>
-                    </div>
-
-                    <div className="space-y-4">
-                        {selectedJob.remarque_ATS && (
-                            <div className="bg-yellow-50 text-yellow-800 p-3 rounded-lg text-xs leading-relaxed">
-                                <Info size={14} className="inline mr-1 -mt-0.5" />
-                                {selectedJob.remarque_ATS}
-                            </div>
-                        )}
-
-                        {aiData && (
-                            <div className="border border-blue-100 rounded-lg p-3 bg-blue-50/30">
-                                <div className="flex items-center gap-2 mb-2 text-blue-700">
-                                    <Wand2 size={16} />
-                                    <h4 className="font-bold text-sm">Stratégie IA</h4>
-                                </div>
-                                <div className="space-y-3">
-                                    <div>
-                                        <p className="text-xs font-semibold text-gray-600 mb-1">Diagnostic Gap</p>
-                                        <p className="text-xs text-gray-800 bg-white p-2 rounded border border-blue-100">{aiData.diagnostic_gap}</p>
+                {/* Job Details & AI Strategy */}
+                <div className="flex-1 overflow-y-auto custom-scrollbar pr-2">
+                    <JobCard
+                        job={selectedJob}
+                        variant="minimal"
+                        onAction={onAction}
+                        className="!shadow-none !border-none"
+                    >
+                        <div className="space-y-4 mt-6 border-t border-gray-100 dark:border-gray-700 pt-4">
+                            {aiData && (
+                                <div className="border border-blue-100 dark:border-blue-900/30 rounded-xl p-4 bg-blue-50/30 dark:bg-blue-900/10">
+                                    <div className="flex items-center gap-2 mb-3 text-pepite-bronze dark:text-pepite-gold">
+                                        <Wand2 size={18} />
+                                        <h4 className="font-bold text-sm">Stratégie d'Adaptation (IA)</h4>
                                     </div>
-                                    <div>
-                                        <p className="text-xs font-semibold text-gray-600 mb-1">Recommandations</p>
-                                        <p className="text-xs text-gray-800 bg-white p-2 rounded border border-blue-100">{aiData.stratégie_adaptation}</p>
-                                    </div>
-                                    {aiData.mots_cles_obligatoires && (
+                                    <div className="space-y-4">
                                         <div>
-                                            <p className="text-xs font-semibold text-gray-600 mb-1">Mots-clés requis</p>
-                                            <div className="flex flex-wrap gap-1">
-                                                {aiData.mots_cles_obligatoires.map((kw, i) => (
-                                                    <span key={i} className="text-[10px] bg-white border border-gray-200 px-2 py-0.5 rounded text-gray-600">{kw}</span>
-                                                ))}
-                                            </div>
+                                            <p className="text-[10px] font-bold text-gray-500 uppercase mb-1">Diagnostic du Gap</p>
+                                            <p className="text-xs text-pepite-dark dark:text-gray-300 leading-relaxed font-medium">{aiData.diagnostic_gap}</p>
                                         </div>
-                                    )}
+                                        <div>
+                                            <p className="text-[10px] font-bold text-gray-500 uppercase mb-1">Stratégie recommandée</p>
+                                            <p className="text-xs text-gray-700 dark:text-gray-400 leading-relaxed">{aiData.stratégie_adaptation}</p>
+                                        </div>
+                                        {aiData.mots_cles_obligatoires && (
+                                            <div>
+                                                <p className="text-[10px] font-bold text-gray-500 uppercase mb-1">Mots-clés à intégrer</p>
+                                                <div className="flex flex-wrap gap-1.5">
+                                                    {aiData.mots_cles_obligatoires.map((kw, i) => (
+                                                        <span key={i} className="text-[10px] bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 px-2 py-0.5 rounded-full text-pepite-bronze dark:text-pepite-gold font-medium">{kw}</span>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
-                        )}
-                    </div>
+                            )}
+                        </div>
+                    </JobCard>
                 </div>
             </div>
 
@@ -525,36 +535,47 @@ const EditorPanel = ({ jobs, onAction, processingCount = 0 }) => {
 
                 {/* Action Bar */}
                 <div className="p-4 border-t border-gray-100 dark:border-gray-700 flex justify-between items-center bg-white dark:bg-gray-800 flex-none transition-colors">
-                    <div className="flex gap-3">
+                    <div className="flex gap-3 items-center">
+                        <button
+                            className="p-2 text-gray-400 hover:text-pepite-gold hover:bg-yellow-50 dark:hover:bg-yellow-900/20 rounded-full transition-colors"
+                            onClick={handleRegenerate}
+                            title="Relancer (Traitement)"
+                        >
+                            <RefreshCw size={20} />
+                        </button>
+
                         {(activeTab === 'cv' || activeTab === 'lm') && (
                             <button
                                 onClick={handlePreview}
-                                className="flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full text-sm font-medium transition-colors"
+                                className="p-2 text-gray-400 hover:text-pepite-gold hover:bg-yellow-50 dark:hover:bg-yellow-900/20 rounded-full transition-colors"
+                                title="Aperçu HTML"
                             >
-                                <Eye size={18} /> Aperçu HTML
+                                <Eye size={20} />
                             </button>
                         )}
-                        <button className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+
+                        <button className="p-2 text-gray-400 hover:text-pepite-gold hover:bg-yellow-50 dark:hover:bg-yellow-900/20 rounded-full transition-colors"
                             onClick={() => onAction('SAVE_DRAFT', selectedJobId, editedContent)}
                             title="Sauvegarder brouillon"
                         >
                             <FileText size={20} />
                         </button>
                     </div>
-                    <div className="flex gap-3">
+
+                    <div className="flex gap-4">
                         <button
                             onClick={() => onAction('REJECT_DRAFT', selectedJobId)}
-                            className="p-3 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors"
-                            title="Rejeter"
+                            className="p-2.5 text-gray-400 hover:text-red-500 transition-colors"
+                            title="Refuser"
                         >
-                            <X size={24} />
+                            <ThumbsDown size={28} />
                         </button>
                         <button
                             onClick={handleValidation}
-                            className="p-3 bg-pepite-gold text-white hover:bg-yellow-500 rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all"
+                            className="p-2.5 text-gray-400 hover:text-pepite-gold transition-colors"
                             title="Valider & Générer PDF"
                         >
-                            <Check size={28} />
+                            <ThumbsUp size={28} />
                         </button>
                     </div>
                 </div>
@@ -611,5 +632,4 @@ const EditorPanel = ({ jobs, onAction, processingCount = 0 }) => {
         </div>
     );
 };
-
 export default EditorPanel;
