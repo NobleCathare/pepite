@@ -68,6 +68,12 @@
         color: #F2E5BD !important;
     }
 
+    /* Force readability for native selects in dark mode (Fixes white-on-white issue) */
+    .dark select option {
+        color: #000000 !important;
+        background-color: #ffffff !important;
+    }
+
     /* Selection Color */
     .rsw-ce::selection {
         background: #F2B441 !important;
@@ -98,5 +104,17 @@
     .dark .prose li,
     .dark .prose a {
         color: #F2E5BD !important;
+    }
+}
+
+/* Utilities */
+@layer utilities {
+    .hide-scrollbar::-webkit-scrollbar {
+        display: none;
+    }
+
+    .hide-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
     }
 }

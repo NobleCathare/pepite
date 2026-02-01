@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
-import { useGoogleSheets } from '../../hooks/useGoogleSheets';
+import { useJobs } from '../../hooks/useJobs';
 
 import { Moon, Sun, Search, X } from 'lucide-react';
 
 const Header = ({ searchQuery, setSearchQuery }) => {
-    const { isAuth, login, logout, user } = useGoogleSheets();
+    const { isAuth, login, logout, user } = useJobs();
     const [darkMode, setDarkMode] = useState(false);
 
     useEffect(() => {
@@ -84,10 +84,10 @@ const Header = ({ searchQuery, setSearchQuery }) => {
 
                     {isAuth ? (
                         <button onClick={logout} className="h-9 w-9 rounded-full bg-pepite-light dark:bg-gray-800 flex items-center justify-center text-pepite-dark dark:text-gray-200 font-bold text-sm hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors overflow-hidden border border-gray-200 dark:border-gray-700" title="Se déconnecter">
-                            {user?.picture ? (
-                                <img src={user.picture} alt={user.name} className="h-full w-full object-cover" />
+                            {user?.picture || user?.photoURL ? (
+                                <img src={user.picture || user.photoURL} alt={user.name || user.displayName} className="h-full w-full object-cover" />
                             ) : (
-                                <span>{user?.given_name?.[0]}{user?.family_name?.[0] || 'CP'}</span>
+                                <span>{(user?.given_name?.[0] || user?.displayName?.[0])}{(user?.family_name?.[0] || user?.displayName?.split(' ')?.[1]?.[0]) || 'P'}</span>
                             )}
                         </button>
                     ) : (

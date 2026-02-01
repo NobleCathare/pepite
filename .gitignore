@@ -28,4 +28,7 @@ serviceAccountKey.json
 *.ntvs*
 *.njsproj
 *.sln
-*.sw?
+
+# Credentials
+serviceAccountKey.json
+

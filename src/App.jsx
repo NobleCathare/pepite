@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { Routes, Route, Navigate, useLocation, Link } from 'react-router-dom';
 import Header from './components/layout/Header';
 import Navigation from './components/layout/Navigation';
 import SwipeContainer from './components/views/SwipeContainer';
@@ -7,33 +8,34 @@ import SubmissionDeck from './components/views/SubmissionDeck';
 import DashboardKanban from './components/views/DashboardKanban';
 import SettingsView from './components/views/SettingsView';
 import MapView from './components/views/MapView';
-// Imports verified
 import { STATUS } from './utils/consts';
-import { useGoogleSheets } from './hooks/useGoogleSheets';
+import { useJobs } from './hooks/useJobs';
+import { useUser } from './hooks/useUser';
 import { useWebhook } from './hooks/useWebhook';
+import useRecruiter from './hooks/useRecruiter';
+import LoginView from './components/views/LoginView';
+import { BackgroundWorker } from './components/BackgroundWorker';
+import PdfPreview from './components/views/PdfPreview';
+import IaMonitorView from './components/views/IaMonitorView';
 
 function App() {
-  const [currentView, setCurrentView] = useState(() => localStorage.getItem('sasre_current_view') || 'triage');
-  const [searchQuery, setSearchQuery] = useState(""); // Global Search State
+  const [searchQuery, setSearchQuery] = useState("");
+  const [processingStatus, setProcessingStatus] = useState(null); // Added State
+  const location = useLocation();
 
-  useEffect(() => {
-    localStorage.setItem('sasre_current_view', currentView);
-  }, [currentView]);
-
-  const { jobs, updateJobStatus, updateJobData, settings, updateSheetValues, appendSheetRow, loading, fetchData, saveJobDraft, token } = useGoogleSheets();
+  const { jobs, updateJobStatus, updateJobData, settings, updateSheetValues, appendSheetRow, loading, fetchData, saveJobDraft, token } = useJobs();
+  const { user: userProfile, loading: userLoading } = useUser();
   const { executeAction } = useWebhook();
+
+  // Recruiter search hook (hybrid workflow: LLM auto + Jina optional)
+  const { autoInferRecruiter } = useRecruiter(updateJobData);
 
   // Auto-refresh logic
   useEffect(() => {
-    // Determine polling frequency based on activity
     const pendingCount = jobs.filter(j => j.Statut === STATUS.TRAITEMENT).length;
-
-    // If we have items in processing, we need faster updates (10s)
-    // If not, we can slow down to save bandwidth (60s)
     const delay = pendingCount > 0 ? 10000 : 60000;
 
     const interval = setInterval(() => {
-      // Use silent mode to NOT trigger global loading state
       fetchData({ silent: true });
     }, delay);
 
@@ -63,126 +65,138 @@ function App() {
 
   // Actions handler
   const handleAction = async (action, id, payload = {}) => {
-    // 1. Trigger Async Background Action
-    // Note: For VALIDATE, we handle specifically below to ensure save order
-
-    // 2. Optimistic UI Update & Logic
     switch (action) {
       case 'REFUSE':
-        executeAction(action, id, payload);
         updateJobStatus(id, STATUS.NON_VALIDEE);
         break;
-      case 'KEEP':
-        executeAction(action, id, payload);
+      case 'KEEP': {
+        // Update status to TRAITEMENT - BackgroundWorker will auto-generate
         updateJobStatus(id, STATUS.TRAITEMENT);
-        executeAction('ENRICH_JOB', id);
+
+        // Find the job object for recruiter inference
+        const targetJob = jobs.find(j => j.id === id);
+
+        // Trigger recruiter auto-inference in background (FREE LLM)
+        // This runs async without blocking the main workflow
+        if (targetJob && !targetJob.Prenom_Recruteur && !targetJob.Nom_Recruteur) {
+          autoInferRecruiter(targetJob).catch(err => {
+            console.warn('[KEEP] Recruiter inference failed (non-blocking):', err.message);
+          });
+        }
+        // NOTE: BackgroundWorker will automatically generate CV/LM/Message
+        // No need for WRITE_APPLICATION webhook anymore!
         break;
-      case 'VALIDATE':
-        // A. Persist the edited content to Google Sheet first
+      }
+      case 'VALIDATE': {
+        // 1. Save the draft content
         await saveJobDraft(id, payload);
 
-        // B. Trigger N8N with ONLY the ID (User request: "Envoie juste l'ID")
-        // n8n will fetch the content (columns AM, AN, AO) from the sheet itself
-        executeAction('GENERATE_PDF', id, {});
-
-        // C. Hide locally
-        updateJobStatus(id, STATUS.TRAITEMENT, {}, true);
+        // 2. Mark as ready for submission
+        // PDF generation is done on-demand in SubmissionDeck
+        updateJobStatus(id, STATUS.PRETE);
         break;
+      }
       case 'SAVE_DRAFT':
-        executeAction(action, id, payload); // Optional: log action? actually saveJobDraft does the work
         saveJobDraft(id, payload);
         break;
       case 'REJECT_DRAFT':
-        executeAction(action, id, payload);
         updateJobStatus(id, STATUS.NON_VALIDEE);
         break;
       case 'MARK_SENT':
-        // executeAction(action, id, payload); // REMOVED per user request
         updateJobStatus(id, STATUS.ENVOYEE, {
           Date_Envoie: new Date().toISOString(),
-          Date_Traitement: new Date().toISOString() // Column S
+          Date_Traitement: new Date().toISOString()
         });
         break;
       case 'SEND_EMAIL':
         executeAction(action, id, payload);
         updateJobStatus(id, STATUS.ENVOYEE, {
           Date_Envoie: new Date().toISOString(),
-          Date_Traitement: new Date().toISOString() // Column S
+          Date_Traitement: new Date().toISOString()
         });
         break;
       case 'STATUS_CHANGE':
         updateJobStatus(id, payload);
         break;
-      case 'REGENERATE':
-        // 1. Update status locally
+      case 'REGENERATE': {
+        // Reset generated content to trigger BackgroundWorker regeneration
         updateJobStatus(id, STATUS.TRAITEMENT);
-
-        // 2. Wait 2 seconds then trigger webhook
-        setTimeout(async () => {
-          try {
-            await fetch('https://n8n.circumambule.synology.me/webhook/98eb872e-ef37-4771-9373-af6a353355ae', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                id: id,
-                action: 'regenerate',
-                timestamp: new Date().toISOString()
-              })
-            });
-            alert('Régénération lancée !');
-          } catch (e) {
-            console.error('Webhook failed', e);
-            alert('Erreur lors de la régénération');
-          }
-        }, 2000);
+        // Clear CV_Texte_Adapte to force BackgroundWorker to regenerate
+        updateJobData(id, { CV_Texte_Adapte: '', LM_Texte: '', Message_Contact: '' });
+        // NOTE: BackgroundWorker will auto-regenerate when it sees empty content
         break;
+      }
       default:
         console.warn("Unknown action", action);
     }
   };
 
-  const renderView = () => {
-    switch (currentView) {
-      case 'triage':
-        return <SwipeContainer jobs={filteredJobs.filter(j => [STATUS.NOUVELLE, STATUS.FILTRE_ATS].includes(j.Statut))} onAction={handleAction} />;
-      case 'editor':
-        return <EditorPanel
-          jobs={filteredJobs.filter(j => j.Statut === STATUS.A_VERIFIER)}
-          processingCount={jobs.filter(j => j.Statut === STATUS.TRAITEMENT).length}
-          onAction={handleAction}
-        />;
-      case 'submission':
-        return <SubmissionDeck jobs={filteredJobs.filter(j => j.Statut === STATUS.PRETE)} onAction={handleAction} />;
-      case 'dashboard':
-        return <DashboardKanban
-          jobs={filteredJobs.filter(j => [STATUS.ENVOYEE, STATUS.ENTRETIEN, STATUS.OFFRE, STATUS.REFUSEE].includes(j.Statut))}
-          onStatusChange={updateJobStatus}
-          onUpdateJob={(job) => updateJobData(job.ID_Annonce, job)}
-          accessToken={token}
-        />;
-      case 'map':
-        return <MapView jobs={filteredJobs} onAction={handleAction} />;
-      case 'settings':
-        return <SettingsView
-          settings={settings}
-          updateSheetValues={updateSheetValues}
-          appendSheetRow={appendSheetRow}
-          jobs={jobs} // Settings might need all jobs for consistency checks, but let's keep it raw for now
-          updateJobStatus={updateJobStatus}
-          loading={loading}
-        />;
-      default:
-        return <SwipeContainer jobs={filteredJobs.filter(j => [STATUS.NOUVELLE, STATUS.FILTRE_ATS].includes(j.Statut))} onAction={handleAction} />;
-    }
-  };
+  // User Loading Check
+  if (userLoading) {
+    return <div className="h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 text-gray-400">Chargement...</div>;
+  }
+
+  // Not Logged In Check
+  if (!userProfile) {
+    return (
+      <Routes>
+        <Route path="/login" element={<LoginView />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col md:flex-row font-sans text-gray-900 dark:text-gray-100 transition-colors duration-200">
+
+      {/* Background Worker */}
+      <BackgroundWorker user={userProfile} setProcessingStatus={setProcessingStatus} />
+
+      {/* Floating Status Bar */}
+      {processingStatus && (
+        <Link
+          to="/debug-ia"
+          className="fixed top-0 left-0 right-0 z-[60] bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-1 text-center shadow-md animate-pulse cursor-pointer flex items-center justify-center gap-2 group transition-colors"
+        >
+          <span>⚡ {processingStatus}</span>
+          <span className="opacity-0 group-hover:opacity-100 text-[10px] bg-white/20 px-2 rounded transition-opacity">Diagnostic →</span>
+        </Link>
+      )}
+
       <Header searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
-      <Navigation currentView={currentView} onViewChange={setCurrentView} counts={counts} />
+      <Navigation counts={counts} />
 
       <main className="flex-1 w-full max-w-7xl mx-auto pt-20 px-4 md:px-8 pb-4">
-        {renderView()}
+        <Routes>
+          <Route path="/" element={<Navigate to="/triage" replace />} />
+          <Route path="/triage" element={<SwipeContainer jobs={filteredJobs.filter(j => [STATUS.NOUVELLE, STATUS.FILTRE_ATS].includes(j.Statut))} onAction={handleAction} />} />
+          <Route path="/map" element={<MapView jobs={filteredJobs} onAction={handleAction} />} />
+          <Route path="/editor" element={<EditorPanel jobs={filteredJobs.filter(j => j.Statut === STATUS.A_VERIFIER)} processingCount={jobs.filter(j => j.Statut === STATUS.TRAITEMENT).length} onAction={handleAction} />} />
+          <Route path="/submission" element={<SubmissionDeck jobs={filteredJobs.filter(j => j.Statut === STATUS.PRETE)} onAction={handleAction} />} />
+          <Route path="/dashboard" element={<DashboardKanban jobs={filteredJobs.filter(j => [STATUS.ENVOYEE, STATUS.ENTRETIEN, STATUS.OFFRE, STATUS.REFUSEE, STATUS.REFUSEE_APRES_ENTRETIEN].includes(j.Statut))} onStatusChange={updateJobStatus} onUpdateJob={(job) => updateJobData(job.id || job.ID_Annonce, job)} accessToken={token} />} />
+
+          {/* Settings Route */}
+          <Route path="/parametre" element={<Navigate to="/parametre/profil" replace />} />
+          <Route path="/parametre/:tab" element={
+            <SettingsView
+              settings={settings}
+              updateSheetValues={updateSheetValues}
+              appendSheetRow={appendSheetRow}
+              jobs={jobs}
+              updateJobStatus={updateJobStatus}
+              loading={loading}
+            />
+          } />
+
+          {/* PDF Preview (standalone page) */}
+          <Route path="/preview-pdf" element={<PdfPreview />} />
+
+          {/* AI Debug Monitor */}
+          <Route path="/debug-ia" element={<IaMonitorView />} />
+
+          {/* Fallback */}
+          <Route path="*" element={<Navigate to="/triage" replace />} />
+        </Routes>
       </main>
     </div>
   );

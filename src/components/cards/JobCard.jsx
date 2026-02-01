@@ -5,14 +5,25 @@ const JobCard = ({ job, onAction, variant = 'triage', children }) => {
     const sourceStyle = SOURCES[job.Source] || SOURCES.DEFAULT;
     const scoreStyle = getScoreColor(job.score_ATS);
 
-    const isCompact = variant === 'kanban' || variant === 'map';
+    const isCompact = variant === 'kanban';
+
+    // Date Formatter: DD/MM/YY
+    const formatDate = (dateStr) => {
+        if (!dateStr) return '';
+        try {
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' });
+        } catch {
+            return dateStr;
+        }
+    };
 
     // Footer Logic
     const renderFooter = () => {
         const commonFlex = "border-t border-gray-100 dark:border-gray-700 pt-3 flex justify-between items-center mt-auto min-h-[50px]";
 
-        // 1. Triage / Swipe View
-        if (variant === 'triage') {
+        // 1. Triage / Swipe View & Map View
+        if (variant === 'triage' || variant === 'map') {
             return (
                 <div className={commonFlex}>
                     <a href={job.URL_offre} target="_blank" rel="noopener noreferrer" className="text-pepite-gold text-sm font-semibold hover:underline flex items-center">
@@ -20,10 +31,10 @@ const JobCard = ({ job, onAction, variant = 'triage', children }) => {
                     </a>
                     <div className="flex gap-3 items-center">
                         <button onClick={() => onAction('REFUSE', job.ID_Annonce)} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors flex items-center justify-center font-bold" title="Refuser">
-                            <ThumbsDown size={22} />
+                            <ThumbsDown size={22} strokeWidth={2.5} />
                         </button>
                         <button onClick={() => onAction('KEEP', job.ID_Annonce)} className="p-2 text-pepite-gold hover:bg-yellow-50 dark:hover:bg-yellow-900/20 rounded-full transition-colors flex items-center justify-center font-bold" title="Conserver">
-                            <ThumbsUp size={22} />
+                            <ThumbsUp size={22} strokeWidth={2.5} />
                         </button>
                     </div>
                 </div>
@@ -35,17 +46,23 @@ const JobCard = ({ job, onAction, variant = 'triage', children }) => {
             return (
                 <div className={commonFlex}>
                     <div className="flex items-center gap-2">
-                        <button onClick={() => onAction('REGENERATE', job.ID_Annonce)} className="text-gray-400 hover:text-pepite-gold transition-colors"><RefreshCw size={16} /></button>
+                        <button
+                            onClick={() => onAction('REGENERATE', job.ID_Annonce)}
+                            className="text-gray-400 hover:text-pepite-gold transition-colors"
+                            title="Régénérer CV, LM et Message (retour en Rédaction)"
+                        >
+                            <RefreshCw size={16} />
+                        </button>
                         <a href={job.URL_offre} target="_blank" rel="noopener noreferrer" className="text-pepite-gold text-sm font-semibold hover:underline flex items-center">
                             Voir l'offre
                         </a>
                     </div>
                     <div className="flex gap-3 items-center">
                         <button onClick={() => onAction('REFUSE', job.ID_Annonce)} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors flex items-center justify-center" title="Refuser l'offre">
-                            <ThumbsDown size={20} />
+                            <ThumbsDown size={20} strokeWidth={2.5} />
                         </button>
                         <button onClick={() => onAction('MARK_SENT', job.ID_Annonce)} className="p-2 text-pepite-gold hover:bg-yellow-50 dark:hover:bg-yellow-900/20 rounded-full transition-colors flex items-center justify-center" title="Marquer comme envoyé">
-                            <ThumbsUp size={20} />
+                            <ThumbsUp size={20} strokeWidth={2.5} />
                         </button>
                     </div>
                 </div>
@@ -68,19 +85,19 @@ const JobCard = ({ job, onAction, variant = 'triage', children }) => {
                         {isEnvoyee ? (
                             <>
                                 <button onClick={() => onAction('STATUS_CHANGE', job.ID_Annonce, STATUS.REFUSEE)} className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors" title="Refuser l'offre">
-                                    <ThumbsDown size={18} />
+                                    <ThumbsDown size={18} strokeWidth={2.5} />
                                 </button>
                                 <button onClick={() => onAction('STATUS_CHANGE', job.ID_Annonce, STATUS.ENTRETIEN)} className="p-1.5 text-pepite-gold hover:bg-yellow-50 dark:hover:bg-yellow-900/20 rounded-full transition-colors" title="Classer en Entretien">
-                                    <ThumbsUp size={18} />
+                                    <ThumbsUp size={18} strokeWidth={2.5} />
                                 </button>
                             </>
                         ) : job.Statut === STATUS.ENTRETIEN ? (
                             <div className="flex gap-2">
-                                <button onClick={() => onAction('STATUS_CHANGE', job.ID_Annonce, STATUS.REFUSEE_APRES_ENTRETIEN)} className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors" title="Refusé après entretien">
-                                    <ThumbsDown size={18} />
+                                <button onClick={() => onAction('STATUS_CHANGE', job.ID_Annonce, STATUS.REFUSEE_APRES_ENTRETIEN)} className="p-1.5 text-gray-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors" title="Refusé après entretien">
+                                    <ThumbsDown size={18} strokeWidth={2.5} />
                                 </button>
                                 <button onClick={() => onAction('STATUS_CHANGE', job.ID_Annonce, STATUS.OFFRE)} className="p-1.5 text-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-full transition-colors" title="Offre reçue !">
-                                    <ThumbsUp size={18} />
+                                    <ThumbsUp size={18} strokeWidth={2.5} />
                                 </button>
                             </div>
                         ) : null}
@@ -89,24 +106,6 @@ const JobCard = ({ job, onAction, variant = 'triage', children }) => {
             );
         }
 
-        // 4. Map Popup
-        if (variant === 'map') {
-            return (
-                <div className={commonFlex}>
-                    <a href={job.URL_offre} target="_blank" rel="noopener noreferrer" className="!text-pepite-gold text-sm font-bold hover:underline flex items-center">
-                        Voir l'offre
-                    </a>
-                    <div className="flex gap-2 items-center">
-                        <button onClick={() => onAction('REFUSE', job.ID_Annonce)} className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors" title="Refuser">
-                            <ThumbsDown size={18} />
-                        </button>
-                        <button onClick={() => onAction('KEEP', job.ID_Annonce)} className="p-1.5 text-pepite-gold hover:bg-yellow-50 dark:hover:bg-yellow-900/20 rounded-full transition-colors" title="Conserver">
-                            <ThumbsUp size={18} />
-                        </button>
-                    </div>
-                </div>
-            );
-        }
 
         // 5. Minimal (Editor)
         if (variant === 'minimal') {
@@ -133,13 +132,26 @@ const JobCard = ({ job, onAction, variant = 'triage', children }) => {
                         {sourceStyle.label}
                     </span>
                     <span className="text-[10px] text-gray-400 dark:text-gray-500 flex items-center gap-1">
-                        <Calendar size={10} /> {job.Date_Publication || job.Date_Traitement}
+                        <Calendar size={10} /> {formatDate(job.Date_Publication || job.Date_Traitement)}
                     </span>
                 </div>
-                <div className="flex gap-3 items-center">
-                    <div className={`text-base font-bold ${scoreStyle}`} title="Score Mots-clés">
-                        {job.score_ATS}
-                    </div>
+                <div className="flex gap-2 items-center">
+                    {/* Dynamic Score (Client) - Renamed to REC */}
+                    {job._score !== undefined && (
+                        <div className={`text-sm font-bold px-2 py-0.5 rounded border border-transparent ${getScoreColor(job._score)} bg-opacity-10 leading-none`} title={`Score Recherche: ${job._score}`}>
+                            <span className="text-[8px] uppercase tracking-wide opacity-70 block mb-0.5">RECH</span>
+                            {job._score}
+                        </div>
+                    )}
+
+                    {/* ATS Score - Hidden in Triage/Map as it's now calculated AFTER keeping */}
+                    {(variant !== 'triage' && variant !== 'map') && job.score_ATS !== undefined && job.score_ATS > 0 && (
+                        <div className={`text-sm font-bold opacity-60 ${getScoreColor(job.score_ATS)} leading-none`} title={`Score ATS: ${job.score_ATS}`}>
+                            <span className="text-[8px] uppercase tracking-wide block mb-0.5">ATS</span>
+                            {job.score_ATS}
+                        </div>
+                    )}
+
                     {job.score_AI !== undefined && job.score_AI > 0 && (
                         <div className="text-base font-extrabold text-purple-600 dark:text-purple-400" title="Score IA">
                             {job.score_AI}

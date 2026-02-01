@@ -1,10 +1,11 @@
 export async function triggerWebhook(action, idAnnonce, payload = {}) {
     const WEBHOOK_URLS = {
         'ENRICH_JOB': import.meta.env.VITE_WEBHOOK_ENRICH_JOB,
-        'GENERATE_PDF': import.meta.env.VITE_WEBHOOK_GENERATE_PDF,
+        'GENERATE_PDF': 'https://n8n.circumambule.synology.me/webhook/5f6be8d6-67c1-4280-a20e-123eb50bd63b',
         'MARK_SENT': import.meta.env.VITE_WEBHOOK_MARK_SENT,
         'SEND_EMAIL': import.meta.env.VITE_WEBHOOK_SEND_EMAIL,
-        'RECALCULATE_SCORES': import.meta.env.VITE_WEBHOOK_RECALCULATE_SCORES
+        'RECALCULATE_SCORES': import.meta.env.VITE_WEBHOOK_RECALCULATE_SCORES,
+        'WRITE_APPLICATION': 'https://n8n.circumambule.synology.me/webhook/98eb872e-ef37-4771-9373-af6a353355ae'
     };
 
     const url = WEBHOOK_URLS[action];

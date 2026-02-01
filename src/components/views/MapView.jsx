@@ -176,8 +176,8 @@ const MapView = ({ jobs, onAction }) => {
                     <div className="text-xs text-gray-500 dark:text-gray-400 space-y-1">
                         <p>Géolocalisées : <strong className="text-gray-800 dark:text-gray-200">{geocodedJobs.length}</strong> / {jobs.length}</p>
                         <div className="flex gap-2 mt-2">
-                            <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-green-500" /> Score ATS</span>
-                            <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-blue-500" /> Envoyée</span>
+                            <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-green-500" /> Nouvelles</span>
+                            <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-blue-500" /> Envoyées</span>
                         </div>
                     </div>
                 </div>
@@ -239,7 +239,7 @@ const MapView = ({ jobs, onAction }) => {
                     <React.Fragment key={job.ID_Annonce}>
                         <CircleMarker
                             center={job.coords}
-                            radius={20 + (job.score_ATS || 0) / 5}
+                            radius={25}
                             pathOptions={{
                                 color: job.Statut === STATUS.ENVOYEE ? '#3B82F6' : '#10B981',
                                 fillColor: job.Statut === STATUS.ENVOYEE ? '#3B82F6' : '#10B981',
@@ -253,13 +253,18 @@ const MapView = ({ jobs, onAction }) => {
                                 className: 'bg-transparent',
                                 html: job.Statut === STATUS.ENVOYEE
                                     ? `<div class="w-3 h-3 rounded-full border-2 border-white shadow-sm bg-blue-500"></div>`
-                                    : `<div class="w-8 h-8 rounded-full border-2 border-white shadow-sm bg-green-500 flex items-center justify-center text-white text-[10px] font-bold">${job.score_ATS || 0}</div>`,
-                                iconSize: job.Statut === STATUS.ENVOYEE ? [12, 12] : [32, 32],
-                                iconAnchor: job.Statut === STATUS.ENVOYEE ? [6, 6] : [16, 16]
+                                    : `
+                                        <div 
+                                            class="rounded-full bg-green-500/20 border-2 border-green-500/60 shadow-sm" 
+                                            style="width: 16px; height: 16px;"
+                                        ></div>
+                                    `,
+                                iconSize: [40, 40], // Room for scaling
+                                iconAnchor: [20, 20]
                             })}
                         >
                             <Popup className="custom-popup">
-                                <div className="w-[280px]">
+                                <div className="w-[320px]">
                                     <JobCard
                                         job={job}
                                         variant="map"

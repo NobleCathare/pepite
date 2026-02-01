@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Layout, FileText, Mail, Info, ChevronRight, Wand2, Plus, Trash2, Eye, Loader2, RefreshCw, ThumbsUp, ThumbsDown, X } from 'lucide-react';
+import { Layout, FileText, Mail, Info, ChevronRight, Wand2, Plus, Trash2, Eye, Loader2, RefreshCw, ThumbsUp, ThumbsDown, X, User, Linkedin, Search } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import HtmlEditor from 'react-simple-wysiwyg';
 import { generateCVHTML, generateLMHTML } from '../../utils/previewTemplates';
-import signatureCss from '../../Signature.css?inline'; // Import CSS as string to extract base64
+import signatureCss from '../../Signature.css?inline';
 import JobCard from '../cards/JobCard';
 import { STATUS } from '../../utils/consts';
+import useRecruiter from '../../hooks/useRecruiter';
 
 const CVEditor = ({ content, onChange }) => {
     // Default structure based on user example
@@ -275,11 +277,16 @@ const MessageEditor = ({ content, onChange }) => {
 
 const EditorPanel = ({ jobs, onAction, processingCount = 0 }) => {
     const [selectedJobId, setSelectedJobId] = useState(jobs[0]?.ID_Annonce || null);
-    const [activeTab, setActiveTab] = useState('cv'); // cv, lm, message
+    const [activeTab, setActiveTab] = useState('cv');
     const [editedContent, setEditedContent] = useState({});
     const [showPreview, setShowPreview] = useState(false);
     const [previewHtml, setPreviewHtml] = useState('');
     const [previewScale, setPreviewScale] = useState(0.5);
+    const [enriching, setEnriching] = useState(false);
+    const [validating, setValidating] = useState(false);
+
+    // Hook for recruiter enrichment
+    const { enrichRecruiter } = useRecruiter();
 
     // Auto-scale preview to fit screen
     useEffect(() => {
@@ -382,8 +389,24 @@ const EditorPanel = ({ jobs, onAction, processingCount = 0 }) => {
 
     const aiData = getAiData();
 
-    const handleValidation = () => {
-        onAction('VALIDATE', selectedJobId, editedContent); // Sends objects
+    const handleValidation = async () => {
+        setValidating(true);
+
+        try {
+            await onAction('VALIDATE', selectedJobId, editedContent);
+
+            // Move to next job if available (current job will be removed by optimistic update)
+            const remainingJobs = jobs.filter(j => j.ID_Annonce !== selectedJobId);
+            if (remainingJobs.length > 0) {
+                setSelectedJobId(remainingJobs[0].ID_Annonce);
+            } else {
+                setSelectedJobId(null);
+            }
+        } catch (error) {
+            console.error('Validation failed:', error);
+        } finally {
+            setValidating(false);
+        }
     };
 
     const handleRegenerate = () => {
@@ -411,9 +434,13 @@ const EditorPanel = ({ jobs, onAction, processingCount = 0 }) => {
                     <div className="flex justify-between items-center mb-2">
                         <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">À traiter ({jobs.length})</h3>
                         {processingCount > 0 && (
-                            <span className="text-xs font-medium text-amber-600 bg-amber-50 dark:bg-amber-900/30 dark:text-amber-400 px-2 py-0.5 rounded-full flex items-center gap-1 animate-pulse">
+                            <Link
+                                to="/debug-ia"
+                                className="text-xs font-medium text-amber-600 bg-amber-50 dark:bg-amber-900/30 dark:text-amber-400 px-2 py-0.5 rounded-full flex items-center gap-1 animate-pulse hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors cursor-pointer"
+                                title="Voir le diagnostic IA"
+                            >
                                 <Loader2 size={10} className="animate-spin" /> {processingCount} en cours
-                            </span>
+                            </Link>
                         )}
                     </div>
                     <div className="space-y-2">
@@ -567,15 +594,21 @@ const EditorPanel = ({ jobs, onAction, processingCount = 0 }) => {
                             onClick={() => onAction('REJECT_DRAFT', selectedJobId)}
                             className="p-2.5 text-gray-400 hover:text-red-500 transition-colors"
                             title="Refuser"
+                            disabled={validating}
                         >
-                            <ThumbsDown size={28} />
+                            <ThumbsDown size={30} strokeWidth={2.5} />
                         </button>
                         <button
                             onClick={handleValidation}
-                            className="p-2.5 text-gray-400 hover:text-pepite-gold transition-colors"
+                            disabled={validating}
+                            className={`p-2.5 transition-colors ${validating ? 'text-gray-300 cursor-wait' : 'text-[#D4AF37] hover:text-yellow-600'}`}
                             title="Valider & Générer PDF"
                         >
-                            <ThumbsUp size={28} />
+                            {validating ? (
+                                <Loader2 size={30} strokeWidth={2.5} className="animate-spin" />
+                            ) : (
+                                <ThumbsUp size={30} strokeWidth={2.5} />
+                            )}
                         </button>
                     </div>
                 </div>
@@ -633,3 +666,4 @@ const EditorPanel = ({ jobs, onAction, processingCount = 0 }) => {
     );
 };
 export default EditorPanel;
+

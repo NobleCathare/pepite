@@ -9,7 +9,7 @@ export const STATUS = {
     OFFRE: "Offre",
     FILTRE_ATS: "Filtre ATS",
     REFUSEE: "Refusée",
-    REFUSEE_APRES_ENTRETIEN: "Refusée après entretien",
+    REFUSEE_APRES_ENTRETIEN: "RefuséeEntretient",
     NON_VALIDEE: "Non validée"
 };
 
@@ -17,6 +17,7 @@ export const SOURCES = {
     FT: { label: "France Travail", color: "bg-blue-100 text-blue-800" },
     WTTJ: { label: "Welcome to the Jungle", color: "bg-purple-100 text-purple-800" },
     MININT: { label: "Ministère Intérieur", color: "bg-gray-100 text-gray-800" },
+    Linkedin: { label: "LinkedIn", color: "bg-[#0077b5] text-white" },
     DEFAULT: { label: "Autre", color: "bg-gray-50 text-gray-600" }
 };
 
