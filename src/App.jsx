@@ -11,7 +11,7 @@ import MapView from './components/views/MapView';
 import { STATUS } from './utils/consts';
 import { useJobs } from './hooks/useJobs';
 import { useUser } from './hooks/useUser';
-import { useWebhook } from './hooks/useWebhook';
+// import { useWebhook } from './hooks/useWebhook'; // REMOVED
 import useRecruiter from './hooks/useRecruiter';
 import LoginView from './components/views/LoginView';
 import { BackgroundWorker } from './components/BackgroundWorker';
@@ -25,7 +25,7 @@ function App() {
 
   const { jobs, updateJobStatus, updateJobData, settings, updateSheetValues, appendSheetRow, loading, fetchData, saveJobDraft, token } = useJobs();
   const { user: userProfile, loading: userLoading } = useUser();
-  const { executeAction } = useWebhook();
+  // const { executeAction } = useWebhook(); // REMOVED
 
   // Recruiter search hook (hybrid workflow: LLM auto + Jina optional)
   const { autoInferRecruiter } = useRecruiter(updateJobData);
@@ -109,7 +109,7 @@ function App() {
         });
         break;
       case 'SEND_EMAIL':
-        executeAction(action, id, payload);
+        // executeAction(action, id, payload); // REMOVED: Managed by BackgroundWorker or Manual
         updateJobStatus(id, STATUS.ENVOYEE, {
           Date_Envoie: new Date().toISOString(),
           Date_Traitement: new Date().toISOString()
