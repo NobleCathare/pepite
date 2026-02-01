@@ -18,12 +18,16 @@ const getProxyUrl = (endpointType, targetUrl = '') => {
         if (endpointType === 'ft_api') return `/api-ft${targetUrl.replace('https://api.francetravail.io', '')}`;
     } else {
         // PRODUCTION (GitHub Pages) -> Use CORS Proxy
-        // "corsproxy.io" failed (403/CORS), switching to "CodeTabs"
-        const proxyBase = 'https://api.codetabs.com/v1/proxy?quest=';
+        // Public Proxies are unstable.
+        // Trying: cors.eu.org (Robust, standard CORS handling)
+        // Note: URL encoding is NOT required for cors.eu.org in the path, but let's be safe for parameters.
+        // Format: https://cors.eu.org/https://...
+        const proxyBase = 'https://cors.eu.org/';
 
-        if (endpointType === 'auth') return `${proxyBase}${encodeURIComponent(FT_AUTH_TARGET)}`;
-        if (endpointType === 'algolia') return `${proxyBase}${encodeURIComponent(ALGOLIA_TARGET)}`;
-        if (endpointType === 'ft_api') return `${proxyBase}${encodeURIComponent(targetUrl)}`;
+        // Remove the encoding for the base URL part as cors.eu.org simply appends it
+        if (endpointType === 'auth') return `${proxyBase}${FT_AUTH_TARGET}`;
+        if (endpointType === 'algolia') return `${proxyBase}${ALGOLIA_TARGET}`;
+        if (endpointType === 'ft_api') return `${proxyBase}${targetUrl}`;
     }
     return targetUrl;
 };
