@@ -15,11 +15,13 @@ const getProxyUrl = (endpointType, targetUrl = '') => {
     // UNIFIED PROXY STRATEGY (Dev & Vercel)
     // We always return relative paths.
     // - Localhost: Handled by vite.config.js proxy
-    // - Production (Vercel): Handled by vercel.json rewrites
+    // - Production (Vercel): Handled by vercel.json rewrites OR Serverless Functions (api/*)
     // This bypasses CORS completely as the browser sees same-origin requests.
 
     if (endpointType === 'auth') return '/auth-ft/connexion/oauth2/access_token?realm=/partenaire';
-    if (endpointType === 'algolia') return '/api-algolia/1/indexes/wttj_jobs_production_fr/query';
+
+    // Use proper Vercel Serverless Function for Algolia to handle Referer spoofing
+    if (endpointType === 'algolia') return '/api/proxy-algolia';
 
     if (endpointType === 'ft_api') {
         // Replace base URL with local proxy prefix
@@ -144,9 +146,6 @@ async function searchWTTJ(searchConfig) {
         const response = await fetch(targetUrl, {
             method: 'POST',
             headers: {
-                'X-Algolia-Application-Id': ALGOLIA_APP_ID,
-                'X-Algolia-API-Key': ALGOLIA_API_KEY,
-                'Referer': 'https://www.welcometothejungle.com/',
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify(body)
