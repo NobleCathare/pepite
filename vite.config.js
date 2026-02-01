@@ -7,11 +7,7 @@ export default defineConfig(({ command }) => ({
   base: command === 'build' ? '/pepite/' : '/',
   server: {
     proxy: {
-      '/webhook': {
-        target: 'https://n8n.circumambule.synology.me',
-        changeOrigin: true,
-        secure: false
-      },
+
       '/api-ft': {
         target: 'https://api.francetravail.io',
         changeOrigin: true,

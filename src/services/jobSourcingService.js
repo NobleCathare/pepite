@@ -17,11 +17,14 @@ const getProxyUrl = (endpointType, targetUrl = '') => {
         if (endpointType === 'algolia') return '/api-algolia/1/indexes/wttj_jobs_production_fr/query';
         if (endpointType === 'ft_api') return `/api-ft${targetUrl.replace('https://api.francetravail.io', '')}`;
     } else {
-        // PRODUCTION (GitHub Pages) -> Use CORS Proxy
-        const proxyBase = 'https://corsproxy.io/?';
-        if (endpointType === 'auth') return `${proxyBase}${encodeURIComponent(FT_AUTH_TARGET)}`;
-        if (endpointType === 'algolia') return `${proxyBase}${encodeURIComponent(ALGOLIA_TARGET)}`;
-        if (endpointType === 'ft_api') return `${proxyBase}${encodeURIComponent(targetUrl)}`;
+        // PRODUCTIONS (GitHub Pages) -> Use CORS Proxy
+        // Fallback to thingproxy as corsproxy.io seems unstable
+        const proxyBase = 'https://thingproxy.freeboard.io/fetch/';
+
+        if (endpointType === 'auth') return `${proxyBase}${FT_AUTH_TARGET}`;
+        if (endpointType === 'algolia') return `${proxyBase}${ALGOLIA_TARGET}`;
+        // Thingproxy handles full URL
+        if (endpointType === 'ft_api') return `${proxyBase}${targetUrl}`;
     }
     return targetUrl;
 };
@@ -49,6 +52,7 @@ async function getFranceTravailToken() {
     const FT_CLIENT_SECRET = import.meta.env.VITE_FT_CLIENT_SECRET || '';
 
     if (!FT_CLIENT_ID || !FT_CLIENT_SECRET) {
+        console.error("[DEBUG] FT Credentials MISSING. ID:", FT_CLIENT_ID ? 'Present' : 'Missing', "Secret:", FT_CLIENT_SECRET ? 'Present' : 'Missing');
         throw new Error('France Travail credentials not configured (.env)');
     }
 
