@@ -18,8 +18,8 @@ const getProxyUrl = (endpointType, targetUrl = '') => {
         if (endpointType === 'ft_api') return `/api-ft${targetUrl.replace('https://api.francetravail.io', '')}`;
     } else {
         // PRODUCTION (GitHub Pages) -> Use CORS Proxy
-        // "thingproxy" is down (DNS Error), switching to "corsproxy.io"
-        const proxyBase = 'https://corsproxy.io/?';
+        // "corsproxy.io" failed (403/CORS), switching to "CodeTabs"
+        const proxyBase = 'https://api.codetabs.com/v1/proxy?quest=';
 
         if (endpointType === 'auth') return `${proxyBase}${encodeURIComponent(FT_AUTH_TARGET)}`;
         if (endpointType === 'algolia') return `${proxyBase}${encodeURIComponent(ALGOLIA_TARGET)}`;
