@@ -1,0 +1,24 @@
+{
+    "rewrites": [
+        {
+            "source": "/api-ft/:match*",
+            "destination": "https://api.francetravail.io/:match*"
+        },
+        {
+            "source": "/auth-ft/:match*",
+            "destination": "https://entreprise.francetravail.fr/:match*"
+        },
+        {
+            "source": "/api-wttj/:match*",
+            "destination": "https://www.welcometothejungle.com/:match*"
+        },
+        {
+            "source": "/api-algolia/:match*",
+            "destination": "https://CSEKHVMS53-dsn.algolia.net/:match*"
+        },
+        {
+            "source": "/(.*)",
+            "destination": "/index.html"
+        }
+    ]
+}

@@ -12,23 +12,20 @@ const ALGOLIA_TARGET = 'https://CSEKHVMS53-dsn.algolia.net/1/indexes/wttj_jobs_p
 // In Dev: Use Vite Proxy (defined in vite.config.js)
 // In Prod: Use Public CORS Proxy (GitHub Pages cannot proxy itself)
 const getProxyUrl = (endpointType, targetUrl = '') => {
-    if (import.meta.env.DEV) {
-        if (endpointType === 'auth') return '/auth-ft/connexion/oauth2/access_token?realm=/partenaire';
-        if (endpointType === 'algolia') return '/api-algolia/1/indexes/wttj_jobs_production_fr/query';
-        if (endpointType === 'ft_api') return `/api-ft${targetUrl.replace('https://api.francetravail.io', '')}`;
-    } else {
-        // PRODUCTION (GitHub Pages) -> Use CORS Proxy
-        // Public Proxies are unstable.
-        // Trying: cors.eu.org (Robust, standard CORS handling)
-        // Note: URL encoding is NOT required for cors.eu.org in the path, but let's be safe for parameters.
-        // Format: https://cors.eu.org/https://...
-        const proxyBase = 'https://cors.eu.org/';
+    // UNIFIED PROXY STRATEGY (Dev & Vercel)
+    // We always return relative paths.
+    // - Localhost: Handled by vite.config.js proxy
+    // - Production (Vercel): Handled by vercel.json rewrites
+    // This bypasses CORS completely as the browser sees same-origin requests.
 
-        // Remove the encoding for the base URL part as cors.eu.org simply appends it
-        if (endpointType === 'auth') return `${proxyBase}${FT_AUTH_TARGET}`;
-        if (endpointType === 'algolia') return `${proxyBase}${ALGOLIA_TARGET}`;
-        if (endpointType === 'ft_api') return `${proxyBase}${targetUrl}`;
+    if (endpointType === 'auth') return '/auth-ft/connexion/oauth2/access_token?realm=/partenaire';
+    if (endpointType === 'algolia') return '/api-algolia/1/indexes/wttj_jobs_production_fr/query';
+
+    if (endpointType === 'ft_api') {
+        // Replace base URL with local proxy prefix
+        return targetUrl.replace('https://api.francetravail.io', '/api-ft');
     }
+
     return targetUrl;
 };
 
