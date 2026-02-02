@@ -55,10 +55,10 @@ export async function generatePDF(htmlContent, options = {}) {
     // Optional: Add PDF options
     if (options.paperWidth) formData.append('paperWidth', options.paperWidth);
     if (options.paperHeight) formData.append('paperHeight', options.paperHeight);
-    formData.append('marginTop', options.marginTop || '0.39');
-    formData.append('marginBottom', options.marginBottom || '0.39');
-    formData.append('marginLeft', options.marginLeft || '0.39');
-    formData.append('marginRight', options.marginRight || '0.39');
+    formData.append('marginTop', options.marginTop || '0');
+    formData.append('marginBottom', options.marginBottom || '0');
+    formData.append('marginLeft', options.marginLeft || '0');
+    formData.append('marginRight', options.marginRight || '0');
     formData.append('preferCssPageSize', 'true');
     formData.append('printBackground', 'true');
 
