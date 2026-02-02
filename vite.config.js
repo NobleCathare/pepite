@@ -28,9 +28,13 @@ export default defineConfig(({ command }) => ({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api-algolia/, ''),
         headers: {
-          'Origin': 'https://www.welcometothejungle.com',
           'Referer': 'https://www.welcometothejungle.com/'
         }
+      },
+      '/api-gotenberg': {
+        target: 'https://gotenberg.circumambule.synology.me',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api-gotenberg/, '')
       }
     }
   }

@@ -4,7 +4,9 @@
  * Replaces n8n workflow '0dbtXdf8DHdzU5p6'.
  */
 
-const GOTENBERG_URL = import.meta.env.VITE_GOTENBERG_URL;
+
+// Use local proxy (local dev) or Vercel rewrite (prod) to avoid CORS
+const GOTENBERG_URL = '/api-gotenberg';
 
 /**
  * Checks if the Gotenberg server is reachable.

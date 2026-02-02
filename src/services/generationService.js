@@ -29,19 +29,19 @@ BASE DE DONNÉES CANDIDAT (SOURCE) :
 PARTIE 1 : LE CV (OPTIMISÉ ATS)
 ══════════════════════════════════════════════════
 1. PROFIL PRO : Accroche percutante de 3-4 lignes. "Expert en [Compétence]..." (Pas de "Je cherche"). Aligne la séniorité.
-2. EXPÉRIENCES : Choisis les 3-4 plus pertinentes. Reformule les titres pour coller à l'offre. 
-   - Puces : Méthode STAR. 
-   - Limite : 10 puces MAX au total. 
-   - Volume : 220-270 mots au total pour les expériences.
-3. COMPÉTENCES/OUTILS : Max 6 compétences clés, Max 5 outils pertinents.
+2. EXPÉRIENCES : Choisis les 4-6 plus pertinentes. Reformule les titres pour coller à l'offre. 
+   - Puces : Méthode STAR. Sois DÉTAILLÉ et PRÉCIS dans les contextes et résultats.
+   - Limite : 15 à 20 puces MAX au total pour l'ensemble du CV.
+   - Volume : 350-450 mots au total pour la section expériences. Il faut de la densité.
+3. COMPÉTENCES/OUTILS : Max 8 compétences clés, Max 6 outils pertinents.
 
 ══════════════════════════════════════════════════
 PARTIE 2 : LA LETTRE DE MOTIVATION (VALEUR AJOUTÉE)
 ══════════════════════════════════════════════════
 - ACCROCHE : 3-4 lignes montrant que tu as compris le défi de l'entreprise.
-- APPORT CANDIDAT : Comment ton expertise résout leurs problèmes.
+- APPORT CANDIDAT : Développe ton argumentation. Comment ton expertise résout leurs problèmes.
 - PROJECTION : Ce que tu vas accomplir dans les 6 premiers mois.
-- CONTRAINTE : Corps du texte entre 260 et 280 mots IMPERATIVEMENT.
+- CONTRAINTE : Corps du texte entre 350 et 400 mots IMPERATIVEMENT. Remplis bien la page.
 
 ══════════════════════════════════════════════════
 PARTIE 3 : MESSAGE DE CONTACT (EMAIL D'ENVOI)

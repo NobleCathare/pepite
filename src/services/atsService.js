@@ -54,6 +54,32 @@ export async function fetchCVContent(publicUrl) {
  * @param {boolean} useTextDirectly - If true, avoid fetching and treat cvUrlOrText as raw text.
  * @returns {Promise<object>} - JSON result { score_ATS, remarque_ATS, ... }
  */
+/**
+ * Simple JSON Healer (dup from generationService)
+ * Attempts to close unterminated strings and braces in truncated LLM responses.
+ */
+function repairTruncatedJson(str) {
+    try {
+        let repaired = str.trim();
+        // 1. If ends with a comma, remove it
+        if (repaired.endsWith(',')) repaired = repaired.slice(0, -1);
+        // 2. Count braces and brackets
+        const openBraces = (repaired.match(/\{/g) || []).length;
+        const closeBraces = (repaired.match(/\}/g) || []).length;
+        const openBrackets = (repaired.match(/\[/g) || []).length;
+        const closeBrackets = (repaired.match(/\]/g) || []).length;
+        // 3. Handle unterminated strings (if odd number of quotes)
+        const quoteCount = (repaired.match(/"/g) || []).length;
+        if (quoteCount % 2 !== 0) repaired += '"';
+        // 4. Close missing structure
+        let depth = openBrackets - closeBrackets;
+        while (depth > 0) { repaired += ']'; depth--; }
+        depth = openBraces - closeBraces;
+        while (depth > 0) { repaired += '}'; depth--; }
+        return repaired;
+    } catch (e) { return str; }
+}
+
 export async function analyzeJobATS(jobData, cvUrlOrText, aiConfig, useTextDirectly = false) {
     if (!OPENROUTER_API_KEY) {
         throw new Error("Clé API OpenRouter manquante (VITE_OPENROUTER_API_KEY).");
@@ -72,7 +98,6 @@ export async function analyzeJobATS(jobData, cvUrlOrText, aiConfig, useTextDirec
     }
 
     // 2. Prepare Prompt & Configuration
-    // Reduced truncation (3000 instead of 10000) to fit in critical balance
     const truncatedDesc = jobData.Description?.slice(0, 3000) || "";
     const truncatedCV = cvText.slice(0, 3000);
 
@@ -85,13 +110,13 @@ export async function analyzeJobATS(jobData, cvUrlOrText, aiConfig, useTextDirec
 
     const userMessage = `<input_data>
 [ANNONCE]
-Titre : ${jobData.Titre_poste}
-Entreprise : ${jobData.Entreprise}
-Lieu : ${jobData.Lieu}
-Description (Tronquée si besoin) : ${truncatedDesc}
+Titre: ${jobData.Titre_poste}
+Entreprise: ${jobData.Entreprise}
+Lieu: ${jobData.Lieu}
+Description (Tronquée si besoin): ${truncatedDesc}
 
 [CANDIDAT]
-CV Textuel (Tronqué si besoin) : ${truncatedCV}
+CV Textuel (Tronqué si besoin): ${truncatedCV}
 </input_data>`;
 
     // 3. Call OpenRouter
@@ -101,8 +126,8 @@ CV Textuel (Tronqué si besoin) : ${truncatedCV}
             headers: {
                 "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
                 "Content-Type": "application/json",
-                "HTTP-Referer": "https://sasre.app", // Optional
-                "X-Title": "SASRE ATS" // Optional
+                "HTTP-Referer": "https://sasre.app",
+                "X-Title": "SASRE ATS"
             },
             body: JSON.stringify({
                 model: model,
@@ -110,8 +135,8 @@ CV Textuel (Tronqué si besoin) : ${truncatedCV}
                     { role: "system", content: systemPrompt },
                     { role: "user", content: userMessage }
                 ],
-                max_tokens: 800,
-                response_format: { type: "json_object" } // Force JSON if supported
+                max_tokens: 2000, // Increased from 800 to avoid truncation
+                response_format: { type: "json_object" }
             })
         });
 
@@ -123,12 +148,21 @@ CV Textuel (Tronqué si besoin) : ${truncatedCV}
         const data = await response.json();
         const content = data.choices[0].message.content;
 
-        // 4. Parse JSON
-        // Ensure clean JSON (sometimes LLMs add markdown fences)
+        // 4. Parse JSON with Repair Fallback
         const cleanJson = content.replace(/```json/gi, '').replace(/```/g, '').trim();
-        const result = JSON.parse(cleanJson);
 
-        return result;
+        try {
+            return JSON.parse(cleanJson);
+        } catch (parseError) {
+            console.warn("[ATS Service] JSON Parse failed, attempting repair...", parseError);
+            const repaired = repairTruncatedJson(cleanJson);
+            try {
+                return JSON.parse(repaired);
+            } catch (repairError) {
+                console.error("[ATS Service] Repair failed:", repaired);
+                throw new Error("Réponse IA tronquée ou malformée.");
+            }
+        }
 
     } catch (error) {
         console.error("ATS Service Error (LLM Analysis):", error);

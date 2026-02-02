@@ -17,6 +17,10 @@
             "destination": "https://CSEKHVMS53-dsn.algolia.net/:match*"
         },
         {
+            "source": "/api-gotenberg/:match*",
+            "destination": "https://gotenberg.circumambule.synology.me/:match*"
+        },
+        {
             "source": "/(.*)",
             "destination": "/index.html"
         }

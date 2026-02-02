@@ -21,45 +21,26 @@ export const BackgroundWorker = ({ user, setProcessingStatus }) => {
     };
 
     // 1. RECTIVE TRIGGER: Listen to DB changes
+    // 1. ROBUST POLLING: Check for work every 15 seconds
+    // Replaces Realtime (too fragile on some networks/servers)
     useEffect(() => {
         if (!user?.id) return;
 
-        console.log("[Worker] Standing by... subscribing to Realtime changes.");
-        emitLog('Robot en veille intelligente (Mode Réactif activé)', 'debug');
+        console.log("[Worker] Starting Robust Polling Mode (15s)...");
+        emitLog('Robot actif : Vérification continue (Mode Robuste)', 'debug');
 
-        // Subscribe to ANY change for this owner
-        let unsubscribeFunc = null;
-        let isCancelled = false;
+        // Initial check immediately
+        setTrigger(prev => prev + 1);
 
-        pb.collection('jobs').subscribe('*', (e) => {
-            if (e.record.ownerId !== user.id) return;
-
-            // Wake up only for interesting status changes or missing scores
-            const isInteresting =
-                ["Traitement", "A traiter"].includes(e.record.Statut) ||
-                (e.record.score_ATS === 0 || e.record.score_ATS === null);
-
-            if (isInteresting) {
-                console.log(`[Worker] Wake up! Change detected on ${e.record.id}`);
-                setTrigger(prev => prev + 1);
-            }
-        }, { filter: `ownerId = "${user.id}"` }).then(unsub => {
-            if (isCancelled) unsub();
-            else unsubscribeFunc = unsub;
-        }).catch(err => console.error("Worker Subscribe Error:", err));
-
-        // 2. SAFETY HEARTBEAT: Run every 15 min just in case
-        const heartbeat = setInterval(() => {
-            console.log("[Worker] Heartbeat safety check...");
+        const POLLING_INTERVAL = 15 * 1000; // 15 seconds
+        const intervalId = setInterval(() => {
+            // Trigger a process cycle
+            // The processQueue function checks processingRef, so it's safe to call often
             setTrigger(prev => prev + 1);
-        }, WORKER_HEARTBEAT);
+        }, POLLING_INTERVAL);
 
         return () => {
-            isCancelled = true;
-            if (unsubscribeFunc) {
-                unsubscribeFunc();
-            }
-            clearInterval(heartbeat);
+            clearInterval(intervalId);
         };
     }, [user?.id]);
 
