@@ -163,45 +163,43 @@ async function searchWTTJ(searchConfig) {
 }
 
 /**
- * Fetches the full description from the WTTJ job page via proxy
- * @param {string} relativeUrl - The portion of the URL after domain (e.g. /fr/companies/...)
+ * Fetches the full description from the WTTJ API
+ * @param {string} orgSlug - The organization slug
+ * @param {string} jobSlug - The job slug
  */
-async function fetchWttjDescription(relativeUrl) {
+async function fetchWttjApiDescription(orgSlug, jobSlug) {
     try {
-        // Use the configured proxy to avoid CORS
-        const proxyUrl = `/api-wttj${relativeUrl}`;
-        console.log(`[WTTJ] Scraping description from: ${proxyUrl}`);
+        const url = `https://api.welcometothejungle.com/api/v1/organizations/${orgSlug}/jobs/${jobSlug}`;
+        console.log(`[WTTJ] Fetching API description from: ${url}`);
 
-        const response = await fetch(proxyUrl);
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        // Try direct fetch first (no proxy needed for this public API usually, but safe to check)
+        // Actually, for browser-side calls, we might need a proxy or rely on CORS headers.
+        // WTTJ API allows CORS from anywhere usually? Let's try direct.
+        // If it fails, we might need a proxy, but the user rejected complex setups.
+        // Based on verify_wttj_api.cjs, it works with simple https.get on Node.
+        // In browser, it might be different properly.
+        // Let's assume it allows CORS or we use the 'api-ft' style proxy if needed?
+        // No, 'api.welcometothejungle.com' is different from 'www.welcometothejungle.com'.
+        // Let's try direct fetch. If CORS blocks, we might need to route via Vite proxy.
 
-        const html = await response.text();
-
-        // 1. Try __NEXT_DATA__ (Reliable)
-        const nextDataMatch = html.match(/<script id="__NEXT_DATA__" type="application\/json">([\s\S]*?)<\/script>/);
-        if (nextDataMatch) {
-            try {
-                const json = JSON.parse(nextDataMatch[1]);
-                const job = json.props?.pageProps?.job;
-                if (job && (job.content || job.description)) {
-                    return job.content || job.description; // HTML content
-                }
-            } catch (e) {
-                console.warn("[WTTJ] Failed to parse NEXT_DATA:", e);
+        const response = await fetch(url, {
+            headers: {
+                'Accept': 'application/json'
             }
+        });
+
+        if (!response.ok) throw new Error(`API HTTP ${response.status}`);
+
+        const json = await response.json();
+
+        // Path to description: json.job.description
+        if (json.job && json.job.description) {
+            return json.job.description;
         }
-
-        // 2. Fallback: Generic Content containers
-        const descriptionMatch = html.match(/<div[^>]*id="description"[^>]*>([\s\S]*?)<\/div>/i);
-        if (descriptionMatch) return descriptionMatch[1];
-
-        // 3. Fallback: Main content
-        const mainMatch = html.match(/<main[^>]*>([\s\S]*?)<\/main>/i);
-        if (mainMatch) return mainMatch[1]; // Might be too dirty
 
         return null;
     } catch (e) {
-        console.warn(`[WTTJ] Scrub failed for ${relativeUrl}:`, e.message);
+        console.warn(`[WTTJ] API fetch failed for ${orgSlug}/${jobSlug}:`, e.message);
         return null;
     }
 }
@@ -666,13 +664,14 @@ export async function searchJobs(userId, sources = { FT: true, WTTJ: true, RSS: 
                                 continue;
                             }
 
-                            // [FIX] Scrape Full Description for NEW jobs
+                            // [FIX] Fetch Full Description via Native API for NEW jobs
                             // We do this sequentially to be nice to the server (and because we are in a loop)
-                            // Ideally we could batch this, but let's keep it simple.
                             if (!rawJob.content && !rawJob.description && !rawJob.description_html) {
-                                const scrapedContent = await fetchWttjDescription(urlOffreRelative);
-                                if (scrapedContent) {
-                                    rawJob.content = scrapedContent; // normalizeWTTJ checks this first
+                                // wait a bit to avoid rate limiting
+                                await new Promise(r => setTimeout(r, 200));
+                                const apiContent = await fetchWttjApiDescription(orgSlug, jobSlug);
+                                if (apiContent) {
+                                    rawJob.content = apiContent; // normalizeWTTJ checks this first
                                 } else {
                                     rawJob.content = "Contenu non récupérable automatiquement. Voir l'annonce.";
                                 }
