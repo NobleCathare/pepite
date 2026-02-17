@@ -162,6 +162,50 @@ async function searchWTTJ(searchConfig) {
     }
 }
 
+/**
+ * Fetches the full description from the WTTJ job page via proxy
+ * @param {string} relativeUrl - The portion of the URL after domain (e.g. /fr/companies/...)
+ */
+async function fetchWttjDescription(relativeUrl) {
+    try {
+        // Use the configured proxy to avoid CORS
+        const proxyUrl = `/api-wttj${relativeUrl}`;
+        console.log(`[WTTJ] Scraping description from: ${proxyUrl}`);
+
+        const response = await fetch(proxyUrl);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+        const html = await response.text();
+
+        // 1. Try __NEXT_DATA__ (Reliable)
+        const nextDataMatch = html.match(/<script id="__NEXT_DATA__" type="application\/json">([\s\S]*?)<\/script>/);
+        if (nextDataMatch) {
+            try {
+                const json = JSON.parse(nextDataMatch[1]);
+                const job = json.props?.pageProps?.job;
+                if (job && (job.content || job.description)) {
+                    return job.content || job.description; // HTML content
+                }
+            } catch (e) {
+                console.warn("[WTTJ] Failed to parse NEXT_DATA:", e);
+            }
+        }
+
+        // 2. Fallback: Generic Content containers
+        const descriptionMatch = html.match(/<div[^>]*id="description"[^>]*>([\s\S]*?)<\/div>/i);
+        if (descriptionMatch) return descriptionMatch[1];
+
+        // 3. Fallback: Main content
+        const mainMatch = html.match(/<main[^>]*>([\s\S]*?)<\/main>/i);
+        if (mainMatch) return mainMatch[1]; // Might be too dirty
+
+        return null;
+    } catch (e) {
+        console.warn(`[WTTJ] Scrub failed for ${relativeUrl}:`, e.message);
+        return null;
+    }
+}
+
 // ═══════════════════════════════════════════════════════════════
 // NORMALISATION
 // ═══════════════════════════════════════════════════════════════
@@ -615,10 +659,23 @@ export async function searchJobs(userId, sources = { FT: true, WTTJ: true, RSS: 
                             const idAnnonce = `WTTJ_${rawJob.objectID}`;
                             const orgSlug = rawJob.organization?.slug || rawJob.company?.slug || 'unknown';
                             const jobSlug = rawJob.slug || 'unknown';
-                            const urlOffre = `https://www.welcometothejungle.com/fr/companies/${orgSlug}/jobs/${jobSlug}`;
+                            const urlOffreRelative = `/fr/companies/${orgSlug}/jobs/${jobSlug}`;
+                            const urlOffre = `https://www.welcometothejungle.com${urlOffreRelative}`;
 
                             if (existingIds.has(idAnnonce) || (urlOffre && existingUrls.has(urlOffre))) {
                                 continue;
+                            }
+
+                            // [FIX] Scrape Full Description for NEW jobs
+                            // We do this sequentially to be nice to the server (and because we are in a loop)
+                            // Ideally we could batch this, but let's keep it simple.
+                            if (!rawJob.content && !rawJob.description && !rawJob.description_html) {
+                                const scrapedContent = await fetchWttjDescription(urlOffreRelative);
+                                if (scrapedContent) {
+                                    rawJob.content = scrapedContent; // normalizeWTTJ checks this first
+                                } else {
+                                    rawJob.content = "Contenu non récupérable automatiquement. Voir l'annonce.";
+                                }
                             }
 
                             const normalized = normalizeWTTJ(rawJob, config.Mot_Cle, userId);
